@@ -250,6 +250,7 @@ extern Key keyFromValue(int key);
 Key WKeyEvent::key() const
 {
   int key = jsEvent_.keyCode;
+  log("test") << "keyCode " << key;
 
   if (key == 0)
     key = jsEvent_.charCode;
