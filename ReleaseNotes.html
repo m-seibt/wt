@@ -20,6 +20,48 @@ newer version of Wt. It lists changes in the library that may break
 the way you build Wt, the way you configure Wt or the Wt API and
 behaviour.
 
+<h2>Release 4.12.4 (March 2, 2026)</h2>
+
+<p>Wt 4.12.4 is a patch release that addresses the following issues:</p>
+
+<ul>
+  <li>
+    <a href="https://redmine.emweb.be/issues/14355" target="_blank">Issue #14355</a>:
+    fixed
+    <a href="classWt_1_1WRadioButton.html" target="_blank">WRadioButton</a> inside a
+    <a href="classWt_1_1WButtonGroup.html" target="_blank">WButtonGroup</a> not being
+    updated on the server side when changed on the client side.
+  </li>
+  <li>
+    <a href="https://redmine.emweb.be/issues/11505" target="_blank">Issue #11505</a>:
+    <a href="classWt_1_1WAbstractItemModel.html#a3c4a0ffe050bc0d11feeac4749dde784" target="_blank">WStandardItemModel::setHeaderData()</a> will now
+    correctly return false instead of making Wt crash when given a wrong section. An error will be logged to let
+    the developer know a wrong section was given.
+  </li>
+  <li>
+    <a href="https://redmine.emweb.be/issues/13417" target="_blank">Issue #13417</a>:
+    fixed a heap buffer overflow when using <code>Auth::AuthUtils::createSalt()</code> with a size that is
+    not a multiple of 3.
+  </li>
+</ul>
+
+<p>Wt 4.12.4 also comes with the following improvements:</p>
+
+<ul>
+  <li>
+    <a href="https://redmine.emweb.be/issues/13498" target="_blank">Issue #13498</a>:
+    <a href="classWt_1_1Auth_1_1AuthModel.html" target="_blank">Auth::AuthModel</a> will now change session id on logout as recommended by
+    <a href="https://owasp.org/" target="_blank">OWASP</a>.
+  </li>
+  <li>
+    <a href="https://redmine.emweb.be/issues/13537" target="_blank">Issue #13537</a>:
+    <a href="classWt_1_1Dbo_1_1Query.html" target="_blank">Dbo::Query</a> with
+    <a href="structWt_1_1Dbo_1_1DirectBinding.html" target="_blank">DirectBinding</a> as <code>BindStrategy</code> are now deprecated and
+    will be completely removed later. <a href="structWt_1_1Dbo_1_1DynamicBinding.html" target="_blank">DynamicBinding</a> <code>BindStrategy</code>
+    should be used instead.
+  </li>
+</ul>
+
 <h2>Release 4.12.3 (February 20, 2026)</h2>
 
 <p> Wt 4.12.3 is a patch release that addresses the following issues: </p>

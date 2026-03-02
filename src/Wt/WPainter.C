@@ -13,8 +13,8 @@
 #include "Wt/Render/WTextRenderer.h"
 #endif
 
+#include "Wt/FromStringDataInfo.h"
 #include "Wt/WApplication.h"
-#include "Wt/WDataInfo.h"
 #include "Wt/WException.h"
 #include "Wt/WLineF.h"
 #include "Wt/WPainter.h"
@@ -151,19 +151,10 @@ WPainter::Image::Image(const std::string& url, int width, int height)
   : width_(width),
     height_(height),
     useOld_(true),
-    info_(nullptr)
-{
-  std::shared_ptr<WDataInfo> info = std::make_shared<WDataInfo>();
-  if (DataUri::isDataUri(url)) {
-    info->setDataUri(url);
-  } else {
-    info->setUrl(url);
-  }
+    info_(std::make_shared<FromStringDataInfo>(url))
+{ }
 
-  info_ = info;
-}
-
-WPainter::Image::Image(std::shared_ptr<WAbstractDataInfo> info, int width, int height)
+WPainter::Image::Image(std::shared_ptr<const WAbstractDataInfo> info, int width, int height)
   : width_(width),
     height_(height),
     useOld_(false),
@@ -172,21 +163,12 @@ WPainter::Image::Image(std::shared_ptr<WAbstractDataInfo> info, int width, int h
 
 WPainter::Image::Image(const std::string& url, const std::string& fileName)
   : useOld_(true),
-    info_(nullptr)
+    info_(std::make_shared<FromStringDataInfo>(url, fileName))
 {
-  std::shared_ptr<WDataInfo> info = std::make_shared<WDataInfo>();
-  info->setFilePath(fileName);
-  if (DataUri::isDataUri(url)) {
-    info->setDataUri(url);
-  } else {
-    info->setUrl(url);
-  }
-
-  info_ = info;
   evaluateSize();
 }
 
-WPainter::Image::Image(std::shared_ptr<WAbstractDataInfo> info)
+WPainter::Image::Image(std::shared_ptr<const WAbstractDataInfo> info)
   : useOld_(false),
     info_(info)
 {
