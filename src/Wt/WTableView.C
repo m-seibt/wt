@@ -1315,8 +1315,15 @@ WWidget* WTableView::headerWidget(int column, bool contentsOnly)
         result = headers_->widget(column - headerColumnsTable_->count());
     }
   } else
-    if (plainTable_ && column < plainTable_->columnCount())
-      result = plainTable_->elementAt(0, column)->widget(0);
+    if (plainTable_ && column < plainTable_->columnCount()) {
+      WTableCell *headerCell = plainTable_->elementAt(0, column);
+      if (headerCell == nullptr)
+        throw Wt::WException("WTableView::headerWidget: column " + std::to_string(column) + "cell does not exist");
+      if (headerCell->count() != 1)
+        throw Wt::WException("WTableView::headerWidget: column " + std::to_string(column) + "cell contains "
+          + std::to_string(headerCell->count()) + " widgets");
+      result = headerCell->widget(0);
+    }
 
   if (result && contentsOnly)
     return result->find("contents");
