@@ -1,7 +1,10 @@
 IF(ENABLE_LIBWTTEST)
+  # Tests source that do not require multi-threading.
+  # The tests requiring multi-threading are added conditionally below.
   SET(TEST_SOURCES
     test.C
     any/AnyTest.C
+    auth/AuthUtilsTest.C
     auth/BCryptTest.C
     auth/SHA1Test.C
     auth/TotpTest.C
@@ -14,8 +17,11 @@ IF(ENABLE_LIBWTTEST)
     json/JsonSerializerTest.C
     json/JsonValueTest.C
     http/CookieTest.C
-    http/HttpClientTest.C
     formdelegate/WFormDelegate.C
+    layouts/WBorderLayoutTest.C
+    layouts/WBoxLayoutTest.C
+    layouts/WFitLayoutTest.C
+    layouts/WGridLayoutTest.C
     logger/ConcurentLoggingTest.C
     mail/MailClientTest.C
     mail/MailMessageTest.C
@@ -36,6 +42,7 @@ IF(ENABLE_LIBWTTEST)
     private/CExpressionParserTest.C
     private/ColorTest.C
     private/I18n.C
+    private/MultipartParseTest.C
     private/SessionFromCookieTest.C
     private/UrlManipTest.C
     render/BlockCssPropertyTest.C
@@ -43,6 +50,7 @@ IF(ENABLE_LIBWTTEST)
     render/CssSelectorTest.C
     render/SpecificityTest.C
     render/WTextRendererTest.C
+    strings/WMessageResourcesTest.C
     strings/WStringTest.C
     types/WDateTest.C
     types/WDateTimeTest.C
@@ -66,6 +74,8 @@ IF(ENABLE_LIBWTTEST)
     widgets/WContainerWidgetTest.C
     widgets/WDateEditTest.C
     widgets/WDialogTest.C
+    widgets/WGroupBoxTest.C
+    widgets/WMenuTest.C
     widgets/WSpinBoxTest.C
     widgets/WStackedWidgetTest.C
     widgets/WTemplateTest.C
@@ -78,12 +88,20 @@ IF(ENABLE_LIBWTTEST)
     payment/MoneyTest.C
     locale/LocaleNumberTest.C
     trampoline/RefEncoder.C
-    testenvironment/TestEnvironmentTest.C
     signals/SignalTest.C
     wdatetime/WDateTimeTest.C
     web/DomElementTest.C
     web/RefEncoderTest.C
+    web/XSSFilterTest.C
   )
+
+  if (MULTI_THREADED)
+    # Add tests that require multi-threading.
+    set(TEST_SOURCES ${TEST_SOURCES}
+      http/HttpClientTest.C
+      testenvironment/TestEnvironmentTest.C
+    )
+  endif()
 
   set(thirdpartysources
     test.C
@@ -253,11 +271,25 @@ IF(ENABLE_LIBWTTEST)
   ENDIF (EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/interactive)
 
   IF(CONNECTOR_HTTP)
+    # Tests source that do not require multi-threading.
+    # The tests requiring multi-threading are added conditionally below.
     SET(HTTP_TEST_SOURCES
       test.C
-      http/HttpClientServerTest.C
-      http/BotTest.C
     )
+
+    if (MULTI_THREADED)
+      # Add tests that require multi-threading.
+      set(HTTP_TEST_SOURCES ${HTTP_TEST_SOURCES}
+        http/HttpClientServerTest.C
+        http/BotTest.C
+        resource/WStreamResourceTest.C
+      )
+
+      SUBDIRS(
+        selenium
+      )
+    endif()
+
     if (NOT (WT_CPP17_FILESYSTEM_IMPLEMENTATION STREQUAL "std" OR BOOST_FS_LIB))
       message(STATUS "** Not building test.http: requires std::filesystem or boost_filesystem library.")
     else()
@@ -280,6 +312,127 @@ IF(ENABLE_LIBWTTEST)
       endif()
     endif()
   ENDIF(CONNECTOR_HTTP)
+
+  if (CONNECTOR_HTTP AND ENABLE_LIBWTDBO)
+    if (NOT (WT_CPP17_FILESYSTEM_IMPLEMENTATION STREQUAL "std" OR BOOST_FS_LIB))
+      message(STATUS "** Not building dbo-http tests: requires std::filesystem or boost_filesystem library.")
+    else()
+      # Tests source that do not require multi-threading.
+      # The tests requiring multi-threading are added conditionally below.
+      set(DBO_HTTP_TEST_SOURCES
+        test.C
+      )
+
+      if (MULTI_THREADED)
+        # Add tests that require multi-threading.
+        set(DBO_HTTP_TEST_SOURCES ${DBO_HTTP_TEST_SOURCES}
+          dbo/http/AuthDboHttpTest.C
+        )
+      endif()
+
+      set(DBO_HTTP_LIBS wt wtdbo wthttp ${WT_THREAD_LIB} ${BOOST_FS_LIB} ${BOOST_TEST_LIBRARIES})
+
+      if (WT_WITH_SSL)
+        set(DBO_HTTP_LIBS ${DBO_HTTP_LIBS} ${OPENSSL_LIBRARIES})
+      endif()
+
+      IF(HAVE_POSTGRES)
+        ADD_EXECUTABLE(       test.postgres.http ${DBO_HTTP_TEST_SOURCES})
+        if (DEBUG_JS)
+          target_compile_definitions(test.postgres.http PRIVATE "WT_DEBUG_JS=${CMAKE_CURRENT_SOURCE_DIR}")
+        endif()
+        TARGET_LINK_LIBRARIES(test.postgres.http ${DBO_HTTP_LIBS} wtdbopostgres)
+        SET_TARGET_PROPERTIES(test.postgres.http PROPERTIES COMPILE_FLAGS "-DPOSTGRES")
+        IF(MSVC)
+          SET_TARGET_PROPERTIES(test.postgres.http PROPERTIES FOLDER "test")
+        ENDIF(MSVC)
+        IF(TARGET Boost::headers)
+          TARGET_LINK_LIBRARIES(test.postgres.http Boost::headers)
+        ENDIF()
+        MESSAGE("** Testing Wt::Dbo using Postgres backend")
+      ENDIF(HAVE_POSTGRES)
+
+      IF(HAVE_MYSQL)
+        ADD_EXECUTABLE(       test.mysql.http ${DBO_HTTP_TEST_SOURCES})
+        if (DEBUG_JS)
+          target_compile_definitions(test.mysql.http PRIVATE "WT_DEBUG_JS=${CMAKE_CURRENT_SOURCE_DIR}")
+        endif()
+        TARGET_LINK_LIBRARIES(test.mysql.http ${DBO_HTTP_LIBS} wtdbomysql)
+        SET_TARGET_PROPERTIES(test.mysql.http PROPERTIES COMPILE_FLAGS "-DMYSQL")
+        IF(MSVC)
+          SET_TARGET_PROPERTIES(test.mysql.http PROPERTIES FOLDER "test")
+        ENDIF(MSVC)
+        IF(TARGET Boost::headers)
+          TARGET_LINK_LIBRARIES(test.mysql.http Boost::headers)
+        ENDIF()
+        MESSAGE("** Testing Wt::Dbo using Mysql backend")
+      ENDIF(HAVE_MYSQL)
+
+      IF(HAVE_ORACLE)
+        ADD_EXECUTABLE(       test.oracle.http ${DBO_HTTP_TEST_SOURCES})
+        if (DEBUG_JS)
+          target_compile_definitions(test.oracle.http PRIVATE "WT_DEBUG_JS=${CMAKE_CURRENT_SOURCE_DIR}")
+        endif()
+        TARGET_LINK_LIBRARIES(test.oracle.http ${DBO_HTTP_LIBS} wtdbooracle)
+        SET_TARGET_PROPERTIES(test.oracle.http PROPERTIES COMPILE_FLAGS "-DORACLE")
+        IF(MSVC)
+          SET_TARGET_PROPERTIES(test.oracle.http PROPERTIES FOLDER "test")
+        ENDIF(MSVC)
+        IF(TARGET Boost::headers)
+          TARGET_LINK_LIBRARIES(test.oracle.http Boost::headers)
+        ENDIF()
+        MESSAGE("** Testing Wt::Dbo using Oracle backend")
+      ENDIF(HAVE_ORACLE)
+
+      IF(HAVE_FIREBIRD)
+        ADD_EXECUTABLE(       test.firebird.http ${DBO_HTTP_TEST_SOURCES})
+        if (DEBUG_JS)
+          target_compile_definitions(test.firebird.http PRIVATE "WT_DEBUG_JS=${CMAKE_CURRENT_SOURCE_DIR}")
+        endif()
+        TARGET_LINK_LIBRARIES(test.firebird.http ${DBO_HTTP_LIBS} wtdbofirebird)
+        SET_TARGET_PROPERTIES(test.firebird.http PROPERTIES COMPILE_FLAGS "-DFIREBIRD")
+        IF(MSVC)
+          SET_TARGET_PROPERTIES(test.firebird.http PROPERTIES FOLDER "test")
+        ENDIF(MSVC)
+        IF(TARGET Boost::headers)
+          TARGET_LINK_LIBRARIES(test.firebird.http Boost::headers)
+        ENDIF()
+        MESSAGE("** Testing Wt::Dbo using Firebird backend")
+      ENDIF(HAVE_FIREBIRD)
+
+      IF(HAVE_SQLITE)
+        ADD_EXECUTABLE(       test.sqlite3.http ${DBO_HTTP_TEST_SOURCES} dbo/SqliteTest.C)
+        if (DEBUG_JS)
+          target_compile_definitions(test.sqlite3.http PRIVATE "WT_DEBUG_JS=${CMAKE_CURRENT_SOURCE_DIR}")
+        endif()
+        TARGET_LINK_LIBRARIES(test.sqlite3.http ${DBO_HTTP_LIBS} wtdbosqlite3)
+        SET_TARGET_PROPERTIES(test.sqlite3.http PROPERTIES COMPILE_FLAGS "-DSQLITE3")
+        IF(MSVC)
+          SET_TARGET_PROPERTIES(test.sqlite3.http PROPERTIES FOLDER "test")
+        ENDIF(MSVC)
+        IF(TARGET Boost::headers)
+          TARGET_LINK_LIBRARIES(test.sqlite3.http Boost::headers)
+        ENDIF()
+        MESSAGE("** Testing Wt::Dbo using Sqlite3 backend")
+      ENDIF(HAVE_SQLITE)
+
+      IF(HAVE_MSSQLSERVER)
+        ADD_EXECUTABLE(       test.mssqlserver.http ${DBO_HTTP_TEST_SOURCES})
+        if (DEBUG_JS)
+          target_compile_definitions(test.mssqlserver.http PRIVATE "WT_DEBUG_JS=${CMAKE_CURRENT_SOURCE_DIR}")
+        endif()
+        TARGET_LINK_LIBRARIES(test.mssqlserver.http ${DBO_HTTP_LIBS} wtdbomssqlserver)
+        SET_TARGET_PROPERTIES(test.mssqlserver.http PROPERTIES COMPILE_FLAGS "-DMSSQLSERVER")
+        IF(MSVC)
+          SET_TARGET_PROPERTIES(test.mssqlserver.http PROPERTIES FOLDER "test")
+        ENDIF(MSVC)
+        IF(TARGET Boost::headers)
+            TARGET_LINK_LIBRARIES(test.mssqlserver.http Boost::headers)
+        ENDIF()
+        MESSAGE("** Testing Wt::Dbo using Microsoft SQL Server backend")
+      ENDIF(HAVE_MSSQLSERVER)
+    endif()
+  endif(CONNECTOR_HTTP AND ENABLE_LIBWTDBO)
 
 ELSE (ENABLE_LIBWTTEST)
   MESSAGE("** libwttest disabled, not building tests")

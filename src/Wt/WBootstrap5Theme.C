@@ -359,6 +359,13 @@ void WBootstrap5Theme::apply(WWidget *widget, DomElement& element,
       element.addPropertyWord(Property::Class, "form-file-text");
     else if (elementRole == FormButton)
       element.addPropertyWord(Property::Class, "form-file-button");
+    else if (elementRole == Badge) {
+      element.addPropertyWords(Property::Class, "Wt-badge badge");
+      auto badge = dynamic_cast<WBadge *>(widget);
+      if (badge && badge->useDefaultStyle()) {
+        element.addPropertyWord(Property::Class, "text-bg-primary");
+      }
+    }
 
     auto inPlaceEdit = dynamic_cast<WInPlaceEdit *>(widget);
     if (inPlaceEdit)
@@ -405,7 +412,7 @@ std::string WBootstrap5Theme::utilityCssClass(int utilityCssClassRole) const
   case ToolTipInner:
     return "tooltip-inner";
   case ToolTipOuter:
-    return "tooltip fade top in position-absolute";
+    return "Wt-tooltip tooltip fade top show";
   default:
     return "";
   }

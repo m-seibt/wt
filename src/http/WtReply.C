@@ -169,7 +169,7 @@ void WtReply::reset(const std::shared_ptr<const Wt::EntryPoint>& ep)
 #endif
 }
 
-void WtReply::logReply(Wt::WLogger& logger)
+void WtReply::logReply(AccessLogger& logger)
 {
   Reply::logReply(logger);
 
@@ -548,6 +548,10 @@ void WtReply::writeDone(bool success)
     Wt::WebRequest::WriteCallback f = fetchMoreDataCallback_;
     fetchMoreDataCallback_ = nullptr;
     f(success ? Wt::WebWriteEvent::Completed :  Wt::WebWriteEvent::Error);
+  }
+
+  if (!httpRequest_ || httpRequest_->done()) {
+    connection()->setResponseDone();
   }
 }
 

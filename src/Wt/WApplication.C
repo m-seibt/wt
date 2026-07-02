@@ -16,6 +16,7 @@
 #include "Wt/WFileUpload.h"
 #include "Wt/WLinkedCssStyleSheet.h"
 #include "Wt/WMemoryResource.h"
+#include "Wt/WStringStream.h"
 #include "Wt/WServer.h"
 #include "Wt/WTimer.h"
 #ifndef WT_TARGET_JAVA
@@ -117,6 +118,7 @@ WApplication::WApplication(const WEnvironment& env
 #ifndef WT_TARGET_JAVA
     initialized_(false),
 #endif // WT_TARGET_JAVA
+    beingDeleted_(false),
     selectionStart_(-1),
     selectionEnd_(-1),
     layoutDirection_(LayoutDirection::LeftToRight),
@@ -136,8 +138,11 @@ WApplication::WApplication(const WEnvironment& env
     hideLoadingIndicator_("hideload", this),
     unloaded_(this, "Wt-unload"),
     idleTimeout_(this, "Wt-idleTimeout"),
+    notificationPermissionAsked_(false),
+    updateNotificationPermission_(this, "Wt-updateNotificationPermission"),
     soundManager_(nullptr),
-    serverSideFontMetrics_(nullptr)
+    serverSideFontMetrics_(nullptr),
+    favicon_(nullptr)
 {
   session_->setApplication(this);
   locale_ = environment().locale();
@@ -294,6 +299,7 @@ WApplication::WApplication(const WEnvironment& env
 
   unloaded_.connect(this, &WApplication::doUnload);
   idleTimeout_.connect(this, &WApplication::doIdleTimeout);
+  updateNotificationPermission_.connect(this, &WApplication::onUpdateNotificationPermission);
 }
 
 void WApplication::setJavaScriptClass(const std::string& javaScriptClass)
@@ -338,6 +344,16 @@ void WApplication
 
     loadingIndicator_->hide();
   }
+}
+
+void WApplication::setFavicon(std::unique_ptr<WFavicon> icon)
+{
+  favicon_ = std::move(icon);
+}
+
+WFavicon *WApplication::favicon() const
+{
+  return favicon_ ? favicon_.get() : session_->defaultFavicon();
 }
 
 #ifndef WT_TARGET_JAVA
@@ -391,6 +407,8 @@ std::string WApplication::onePixelGifUrl()
 
 WApplication::~WApplication()
 {
+  beingDeleted_ = true;
+
 #ifndef WT_TARGET_JAVA
   Configuration& conf = env().server()->configuration();
   if (conf.servePrivateResourcesToBots() && env().agentIsSpiderBot()) {
@@ -804,6 +822,16 @@ WWidget *WApplication::findWidget(const std::string& name)
   return result;
 }
 
+WWidget* WApplication::findById(const std::string& id) const
+{
+  WWidget *result = domRoot_->findById(id);
+  if (!result && domRoot2_) {
+    result = domRoot2_->findById(id);
+  }
+
+  return result;
+}
+
 void WApplication::doUnload()
 {
   if (session_->suspended())
@@ -840,6 +868,12 @@ void WApplication::idleTimeout()
   const Configuration& conf = environment().server()->configuration();
   LOG_INFO("User idle for " << conf.idleTimeout() << " seconds, quitting due to idle timeout");
   quit();
+}
+
+void WApplication::onUpdateNotificationPermission(const std::string& permission)
+{
+  env().setNotificationPermission(permission);
+  notificationPermissionChanged_.emit(env().notificationPermission());
 }
 
 void WApplication::handleJavaScriptError(const std::string& errorText)
@@ -1147,7 +1181,9 @@ EventSignal<>& WApplication::globalEscapePressed()
 
 void WApplication::setAsFocus(const std::string& id)
 {
-  WWidget* w = root()->findById(id);
+  if (beingDeleted_)
+    return;
+  WWidget* w = findById(id);
   if (w) {
     w->setFocus();
   }
@@ -1740,6 +1776,7 @@ void WApplication::streamAfterLoadJavaScript(WStringStream& out)
 {
   out << afterLoadJavaScript_;
   afterLoadJavaScript_.clear();
+  streamFaviconUpdate(out);
 }
 
 void WApplication::streamBeforeLoadJavaScript(WStringStream& out, bool all, bool withPreamble)
@@ -1839,6 +1876,29 @@ SoundManager *WApplication::getSoundManager()
   return soundManager_;
 }
 
+void WApplication::streamFaviconUpdate(WStringStream& out)
+{
+  const std::string url = favicon()->url();
+  if (url != faviconUrl_) {
+    if (url.empty()) {
+       out << "let link = document.querySelector(\"link[rel~='icon']\");"
+           << "if (link) {"
+           <<   "link.parentNode.removeChild(link);"
+           << "}";
+    } else {
+      out << "let link = document.querySelector(\"link[rel~='icon']\");"
+          << "if (!link) {"
+          <<   "link = document.createElement('link');"
+          <<   "link.rel = 'icon';"
+          <<   "document.head.appendChild(link);"
+          << "}"
+          << "link.href = " << WString(url).jsStringLiteral() << ";";
+    }
+
+    faviconUrl_ = url;
+  }
+}
+
 #ifdef WT_DEBUG_JS
 
 void WApplication::loadJavaScript(const char *jsFile)
@@ -1923,10 +1983,37 @@ bool WApplication::javaScriptLoaded(const char *jsFile) const
 void WApplication::setFocus(const std::string& id,
                             int selectionStart, int selectionEnd)
 {
+  const bool didFocusChange = focusId_ != id;
+
   focusId_ = id;
   selectionStart_ = selectionStart;
   selectionEnd_ = selectionEnd;
-  focusChanged_.emit();
+
+  if (didFocusChange) {
+    focusChanged_.emit();
+  }
+}
+
+void WApplication::setFocus(WWidget* widget,
+                            int selectionStart, int selectionEnd)
+{
+  setFocusedWidget(widget);
+  std::string widgetId = widget ? widget->id() : "";
+  setFocus(widgetId, selectionStart, selectionEnd);
+}
+
+void WApplication::setFocusedWidget(WWidget *widget)
+{
+  focusedWidget_.reset(widget);
+}
+
+WWidget* WApplication::focusedWidget() const
+{
+  if (!focusedWidget_|| focusedWidget_->id() != focusId_) {
+    focusedWidget_.reset(focusId_.empty() ? nullptr : findById(focusId_));
+  }
+
+  return focusedWidget_.get();
 }
 
 #ifndef WT_TARGET_JAVA

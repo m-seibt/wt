@@ -138,6 +138,13 @@
     }
   }
 
+  /*
+   * Fix dialog content being cut off see #14332
+   */
+  .Wt-fill-width > .modal-body {
+    width: 100%;
+  }
+
   .modal-body {
     .modal-footer {
       margin: 0px -15px -15px;
@@ -180,7 +187,7 @@
   background: url(../splitter-h.png) no-repeat 50% 50% #EEE;
 }
 
-.Wt-hsh2, .Wt-vsh2, 
+.Wt-hsh2, .Wt-vsh2,
 .Wt-vrh2:hover, .Wt-hrh2:hover {
   background-color: @gray-light;
 }
@@ -667,9 +674,20 @@ body.Wt-rtl {
 .Wt-tableview {
   white-space: nowrap;
 
-  .Wt-header .Wt-tv-c {
-    padding-left: 6px;
-    margin-left: 6px; /*bootstrap 3 border box*/
+  .Wt-header .Wt-label {
+    padding-inline: 3px 0px;
+  }
+
+  .Wt-header .Wt-tv-no-rh ~ * > * > .Wt-label {
+    padding-inline-end: 3px;
+  }
+
+  .Wt-header div[style*="text-align:center;"] .Wt-tv-sh ~ .Wt-label {
+    padding-inline: 19px 0px;
+  }
+
+  .Wt-header.Wt-tv-no-rh ~ div[style*="text-align:center;"] > * > .Wt-tv-sh ~ .Wt-label {
+    padding-inline-start: 16px;
   }
 
   .Wt-tv-contents {
@@ -1073,7 +1091,7 @@ body.Wt-rtl {
   span:hover {
     color: @component-active-color;
     background-color: @link-color;
-  } 
+  }
 }
 
 /*
@@ -1082,6 +1100,15 @@ body.Wt-rtl {
 .Wt-stack.Wt-animated {
   overflow: hidden;
   position: relative;
+}
+
+/*
+ * WBadge
+ */
+.btn .Wt-badge,
+.nav .Wt-badge,
+.dropdown-menu .Wt-badge {
+ margin-inline-start: 2px;
 }
 
 /*

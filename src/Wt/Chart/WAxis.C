@@ -16,6 +16,7 @@
 #include "Wt/WPainter.h"
 #include "Wt/WPainterPath.h"
 #include "Wt/WRectF.h"
+#include "Wt/WTextF.h"
 #include "Wt/WTime.h"
 #include "Wt/WMeasurePaintDevice.h"
 #include "Wt/WLocale.h"
@@ -1922,7 +1923,7 @@ void WAxis::render(WPainter& painter,
       cfg.side = side;
       getLabelTicks(ticks, segment, cfg);
 
-      std::vector<WString> labels;
+      std::vector<WTextF> labels;
       WPainterPath path;
       for (unsigned i = 0; i < ticks.size(); ++i) {
         double u = mapToDevice(ticks[i].u, segment);
@@ -1939,7 +1940,7 @@ void WAxis::render(WPainter& painter,
 
         if (properties.test(AxisProperty::Labels) && !ticks[i].label.empty()) {
           path.moveTo(p);
-          labels.push_back(ticks[i].label);
+          labels.push_back(WTextF(ticks[i].label));
         }
       }
       WTransform t = vertical ? WTransform(1,0,0,1, labelPos, 0) : WTransform(1,0,0,1,0, labelPos);
@@ -1978,7 +1979,7 @@ void WAxis::render(WPainter& painter,
 }
 
 void WAxis::renderLabels(WPainter &painter,
-                        const std::vector<WString> &labels,
+                        const std::vector<WTextF> &labels,
                         const WPainterPath &path,
                         WFlags<AlignmentFlag> flags,
                         double angle, int margin,
@@ -2030,7 +2031,7 @@ void WAxis::renderLabels(WPainter &painter,
   if (painter.device()->features().test(PaintDeviceFeatureFlag::FontMetrics)) {
     WMeasurePaintDevice device(painter.device());
     WPainter measPainter(&device);
-    measPainter.drawText(WRectF(0,0,100,100), WFlags<AlignmentFlag>(AlignmentFlag::Middle) | AlignmentFlag::Center, TextFlag::SingleLine, "Sfjh", 0);
+    measPainter.drawText(WRectF(0,0,100,100), WFlags<AlignmentFlag>(AlignmentFlag::Middle) | AlignmentFlag::Center, TextFlag::SingleLine, WTextF("Sfjh"), 0);
     lineHeight = device.boundingRect().height();
   }
 
@@ -2041,12 +2042,21 @@ void WAxis::renderLabels(WPainter &painter,
     painter.setClipping(false);
   }
 
+#ifndef WT_TARGET_JAVA
   painter.drawTextOnPath(WRectF(left, top, width, height),
                          WFlags<AlignmentFlag>(horizontalAlign) | verticalAlign,
                          labels, transform,
                          path,
                          angle, lineHeight,
                          clipping && !partialLabelClipping_);
+#else
+  painter.drawWTextFOnPath(WRectF(left, top, width, height),
+                         WFlags<AlignmentFlag>(horizontalAlign) | verticalAlign,
+                         labels, transform,
+                         path,
+                         angle, lineHeight,
+                         clipping && !partialLabelClipping_);
+#endif
 
   painter.setClipping(clipping);
 

@@ -20,12 +20,591 @@ newer version of Wt. It lists changes in the library that may break
 the way you build Wt, the way you configure Wt or the Wt API and
 behaviour.
 
+<h2>Release 4.13.4 (July 2, 2026)</h2>
+
+<p>Wt 4.13.4 is a patch release that addresses the following issues:</p>
+
+<ul>
+  <li>
+    <a href="https://redmine.emweb.be/issues/14615" target="_blank">Issue #14615</a>:
+    fixed a memory leak sometimes happening when using a spool file.
+  </li>
+</ul>
+
+<p>Wt 4.13.4 also comes with the following improvements:</p>
+
+<ul>
+  <li>
+    <a href="https://redmine.emweb.be/issues/14630" target="_blank">Issue #14630</a>:
+    disabled form data caching by default, as it still has some bugs that need to be fixed.
+  </li>
+</ul>
+
+<h2>Release 4.13.3 (June 16, 2026)</h2>
+
+<p>Wt 4.13.3 is a patch release that addresses the following issues:</p>
+
+<ul>
+  <li>
+    <a href="https://redmine.emweb.be/issues/14513" target="_blank">Issue #14513</a>:
+    fixed form data sometimes being updated for events where it should not be updated,
+    or not being updated for events where it should. This was mainly causing issues with
+    Firefox.
+  </li>
+  <li>
+    <a href="https://redmine.emweb.be/issues/12463" target="_blank">Issue #12463</a>:
+    made
+    <a href="classWt_1_1WStreamResource.html#ab83350ee7a4a14ad06965145073b0293" target="_blank">WStreamResource::handleRequestPiecewise()</a>
+    able to concurrently handle multiple requests correctly.
+  </li>
+  <li>
+    <a href="https://redmine.emweb.be/issues/14150" target="_blank">Issue #14150</a>:
+    fixed
+    sub-sub-<a href="classWt_1_1WPopupMenu.html" target="_blank">WPopupMenu</a> sometimes popping
+    up behind its parent menu.
+  </li>
+  <li>
+    <a href="https://redmine.emweb.be/issues/14575" target="_blank">Issue #14575</a>:
+    fixed
+    <a href="classWt_1_1WDateEdit.html" target="_blank">WDateEdit</a> and
+    <a href="classWt_1_1WTimeEdit.html" target="_blank">WTimeEdit</a> popups missing some style classes when the editor started hidden.
+  </li>
+  <li>
+    <a href="https://redmine.emweb.be/issues/12407" target="_blank">Issue #12407</a>:
+    fixed submenus wrongly selecting themselves when clearing their selection using
+    <a href="classWt_1_1WMenu.html#aec1801d047dc0f150d1cc12b801aa6c2" target="_blank">WMenu::select(-1)</a>. This meant that
+    instead of clearing the selection of a submenu, calling
+    <a href="classWt_1_1WMenu.html#aec1801d047dc0f150d1cc12b801aa6c2" target="_blank">WMenu::select(-1)</a> would actually
+    select the first item of the submenu.
+  </li>
+  <li>
+  <a href="https://redmine.emweb.be/issues/14576" target="_blank">Issue #14576</a>:
+    fixed adding an empty path component or changing a path component to an empty one in a
+    <a href="classWt_1_1WMenu.html" target="_blank">WMenu</a> would change the selected
+    item to the one with the empty path component if the
+    <a href="classWt_1_1WMenu.html" target="_blank">WMenu</a> had internal path enabled.
+  </li>
+  <li>
+    <a href="https://redmine.emweb.be/issues/12073" target="_blank">Issue #12073</a>:
+    fixed compilation error on windows when compiling <code>wtdbopostgres.lib</code> with C++17 or higher.
+  </li>
+  <li>
+    <a href="https://redmine.emweb.be/issues/10923" target="_blank">Issue #10923</a>:
+    fixed various entries of <a href="classWt_1_1WEnvironment.html" target="_blank">WEnvironment</a> properties
+    not being set in
+    <a href="namespaceWt.html#af4b6ed5fd28b4f5fa141b153c1107349accf2281a355c2c9cd4698ac30bea7820" target="_blank">Widgetset</a> mode.
+  </li>
+  <li>
+    <a href="https://redmine.emweb.be/issues/14527" target="_blank">Issue #14527</a>:
+    fixed resize handles in layouts adding extra space at the end of a row or column.
+  </li>
+  <li>
+    <a href="https://redmine.emweb.be/issues/12429" target="_blank">Issue #12429</a>:
+    fixed
+    <a href="classWt_1_1WAbstractItemView.html" target="_blank">WAbstractItemView</a> not resetting
+    the sorted column when changing or resetting its model.
+  </li>
+  <li>
+  <a href="https://redmine.emweb.be/issues/14572" target="_blank">Issue #14572</a>:
+    fixed
+    <a href="classWt_1_1WAbstractItemView.html#ae68d56771c5e9d408d78b4b9d198967f" target="_blank">WAbstractItemView::scrollTo()</a>
+    not fully scrolling the column to the left when it should, leading to the right border of the last column being hidden.
+  </li>
+  <li>
+    <a href="https://redmine.emweb.be/issues/14576" target="_blank">Issue #14576</a>:
+    fixed
+    <a href="classWt_1_1WTemplate.html" target="_blank">WTemplate</a> with bound widgets executing JavaScript code on the client side when calling
+    <a href="classWt_1_1WTemplate.html#a98baf277a7dd3144a38edb77cbb3d284" target="_blank">WTemplate::renderTemplate()</a>.
+
+    Additionally,
+    <a href="classWt_1_1WWidget.html#aaae07190fb97d856149226ea315a75d0" target="_blank">WWidget::htmlText()</a> will no longer execute JavaScript code,
+    but will instead stream the JavaScript code to the optional
+    <a href="classWt_1_1WStringStream.html" target="_blank">WStringStream</a>.
+  </li>
+  <li>
+    <a href="https://redmine.emweb.be/issues/9106" target="_blank">Issue #9106</a>:
+    fixed a race condition that could lead to websocket connections not being closed at the destruction of the session.
+  </li>
+  <li>
+    <a href="https://redmine.emweb.be/issues/14579" target="_blank">Issue #14579</a>:
+    ensured that
+    <a href="classWt_1_1WResource.html" target="_blank">WResource</a> suggested file names
+    fallback for browser that do not support RFC 5987 are sent without non-ASCII characters
+    to maximize retrocompatibility.
+  </li>
+  <li>
+    <a href="https://redmine.emweb.be/issues/14172" target="_blank">Issue #14172</a>:
+    fixed
+    <a href="classWt_1_1WTextEdit.html" target="_blank">WTextEdit</a> making the
+    application crash when the configured TinyMCE version was not a valid integer.
+  </li>
+  <li>
+  <a href="https://redmine.emweb.be/issues/13907" target="_blank">Issue #13907</a>:
+    fixed a warning about an incorrect version of TinyMCE sometimes being logged when the correct version was actually used.
+  </li>
+</ul>
+
+<p>Wt 4.13.3 also comes with the following improvements: </p>
+
+<ul>
+  <li>
+    <a href="https://redmine.emweb.be/issues/12664" target="_blank">Issue #12664</a>:
+    added the possibility to check whether a
+    <a href="classWt_1_1Mail_1_1Client.html" target="_blank">Mail::Client</a> is connected
+    to an SMTP server using
+    <a href="classWt_1_1Mail_1_1Client.html#a77e59d60fe764dd199a86a7fe922ac9b" target="_blank">Mail::Client::isConnected()</a>.
+  </li>
+  <li>
+    <a href="https://redmine.emweb.be/issues/14473" target="_blank">Issue #14473</a>:
+    made
+    <a href="classWt_1_1WDialog.html#a7dd5be946b39806805285cfa7416757f" target="_blank">WDialog::positionAt(WMouseEvent)</a>
+    also show the dialog.
+  </li>
+  <li>
+    <a href="https://redmine.emweb.be/issues/14045" target="_blank">Issue #14045</a>:
+    added debug logging when committing or rolling back a
+    <a href="classWt_1_1Dbo_1_1Transaction.html" target="_blank">Dbo::Transaction</a>.
+    The case where the transaction is nested, and would not immediately commit, is logged as well.
+  </li>
+  <li>
+    <a href="https://redmine.emweb.be/issues/12815" target="_blank">Issue #12815</a>:
+    added some clarification to the documentation of
+    <a href="namespaceWt_1_1Form_1_1Dbo.html" target="_blank">Form::Dbo</a> classes.
+  </li>
+</ul>
+
+<h2>Release 4.13.2 (May 7, 2026)</h2>
+
+<p>Wt 4.13.2 is a patch release that addresses the following issues:</p>
+
+<ul>
+  <li>
+    <a href="https://redmine.emweb.be/issues/14490" target="_blank">Issue #14490</a>:
+    fixed form object data not being correctly cached when updated via signal. It seems that
+    it mainly caused issues with browser auto-fill.
+  </li>
+  <li>
+    <a href="https://redmine.emweb.be/issues/14469" target="_blank">Issue #14469</a>:
+    fixed
+    <a href="classWt_1_1WGroupBox.html" target="_blank">WGroupBox</a> being unable to add or insert widgets.
+  </li>
+  <li>
+    <a href="https://redmine.emweb.be/issues/14482" target="_blank">Issue #14482</a>:
+    fixed
+    <a href="classWt_1_1WApplication.html#a1918508a02889373a9e1fc1d872f2753" target="_blank">WApplication::focusedWidget()</a>
+    returning nullptr when the focused widget was inside of a popup.
+  </li>
+  <li>
+    <a href="https://redmine.emweb.be/issues/14488" target="_blank">Issue #14488</a>:
+      fixed
+      <a href="classWt_1_1WApplication.html#a60c1defb57949f6f78c6c1373a18e74e" target="_blank">Global key events</a>
+      not being emitted if connected for the first time after the page had already been loaded by the client.
+  </li>
+  <li>
+    <a href="https://redmine.emweb.be/issues/14481" target="_blank">Issue #14481</a>:
+    ensured that <code>XHTML</code> content in a <a href="classWt_1_1WPushButton.html" target="_blank">WPushButton</a> is correctly
+    rendered as such, in case of the content being a localized string, containing an <code>XHTML entity</code>.
+  </li>
+  <li>
+    <a href="https://redmine.emweb.be/issues/7974" target="_blank">Issue #7974</a>:
+    fixed
+    <a href="classWt_1_1WPopupMenu.html" target="_blank">WPopupMenu</a> and
+    <a href="classWt_1_1WPopupWidget.html" target="_blank">WPopupWidget</a>
+    not avoiding being cut off by the edges of their parent widget when being
+    positioned.
+  </li>
+  <li>
+    <a href="https://redmine.emweb.be/issues/11704" target="_blank">Issue #11704</a>
+    fixed Wt not being able to dynamically link against libharu versions 2.4.2 and higher on Windows.
+    Additionally, the version of libharu bundled with Wt binary releases on Windows has been updated from 2.3.0 to 2.4.6.
+  </li>
+</ul>
+
+<p>Wt 4.13.2 also comes with the following improvements:</p>
+
+<ul>
+  <li>
+    <a href="https://redmine.emweb.be/issues/14367" target="_blank">Issue #14367</a>:
+    made it possible to scroll a
+    <a href="classWt_1_1WTableView.html" target="_blank">WTableView</a> when having the mouse over a
+    header (column or row) if scrolling in that direction would make that header move.
+  </li>
+  <li>
+    <a href="https://redmine.emweb.be/issues/14466" target="_blank">Issue #14466</a>:
+    added the possibility to upgrade mariadb-connector-c to version 3.4.8 on windows. The library has been
+    updated on the windows builds.
+  </li>
+</ul>
+
+<h2>Release 4.13.1 (April 15, 2026)</h2>
+
+<p>Wt 4.13.1 is a patch release that addresses the following issues:</p>
+
+<ul>
+  <li>
+    <a href="https://redmine.emweb.be/issues/14472" target="_blank">Issue #14472</a>:
+    delayed the automatic connection of the
+    <a href="classWt_1_1WWebWidget.html#ae33de6853f17057cb6a8ff06a160b14d" target="_blank">WWebWidget::focussed()</a> signal until the first
+    render of the widget.
+  </li>
+</ul>
+
+<h2>Release 4.13.0 (April 14, 2026)</h2>
+
+<p>Wt 4.13.0 is a major release that introduces the following new features:</p>
+
+<ul>
+  <li>
+    <a href="https://redmine.webtoolkit.eu/issues/12968" target="_blank">Issue #12968</a>:
+    It is now possible to send notifications trough JavaScript notification API using <a href="classWt_1_1WNotification.html" target="_blank">WNotification</a>. You
+    can see examples of how to use it in the
+    <a href="https://www.webtoolkit.eu/widgets/notification" target="_blank">Widget Gallery</a>.
+  </li>
+  <li>
+    <a href="https://redmine.webtoolkit.eu/issues/12967" target="_blank">Issue #12967</a>:
+    It is now possible to change the favicon of an individual
+    <a href="classWt_1_1WApplication.html" target="_blank">WApplication</a> using
+    <a href="classWt_1_1WApplication.html#a2681edc4e1b0edbb22c5e1aa72381101" target="_blank">WApplication::setFavicon()</a>. This takes as parameter a
+    <a href="classWt_1_1WFavicon.html" target="_blank">WFavicon</a> which is a new class representing favicons. Since the main goal of this feature is to allow developers to notify
+    the user using the favicon, the WFavicon is mainly designed to make around this idea. While WFavicon is an abstract class, we also added four specialisations of this class.
+    The
+    <a href="classWt_1_1WResourceFavicon.html" target="_blank">WResourceFavicon</a> and
+    <a href="classWt_1_1WUrlFavicon.html" target="_blank">WUrlFavicon</a> are simple specialisations of WFavicon that allows to create a favicon from a
+    <a href="classWt_1_1WResource.html" target="_blank">WResource</a> or a URL respectively.
+    The
+    <a href="classWt_1_1WRasterFavicon.html" target="_blank">WRasterFavicon</a>, uses a
+    <a href="classWt_1_1WRasterImage.html" target="_blank">WRasterImage</a> to update the favicon (this is only available if WRasterImage is available).
+    And the
+    <a href="classWt_1_1WFaviconPair.html" target="_blank">WFaviconPair</a>, can be used to switch between two
+    <a href="classWt_1_1WFavicon.html" target="_blank">WFavicon</a>.
+    You can see examples of how to use it in the
+    <a href="https://www.webtoolkit.eu/widgets/notification/wfavicon" target="_blank">Widget Gallery</a>.
+  </li>
+  <li>
+    <a href="https://redmine.emweb.be/issues/12946" target="_blank">Issue #12946</a>:
+    Added
+    <a href="classWt_1_1WBadge.html" target="_blank">WBadge</a>, a new class that represents a badge which is a text
+    with a special look. Badges are often used to draw the attention, or warn of updates.
+    It is possible to add a WBadge to a
+    <a href="classWt_1_1WPushButton.html" target="_blank">WPushButton</a>, to a
+    <a href="classWt_1_1WMenuItem.html" target="_blank">WMenuItem</a>, (and by extension) to a
+    <a href="classWt_1_1WTabWidget.html" target="_blank">WTabWidget</a>.
+    You can see examples of how to use it in the
+    <a href="https://www.webtoolkit.eu/widgets/notification/wbadge" target="_blank">Widget Gallery</a>.
+  </li>
+  <li>
+    <a href="https://redmine.emweb.be/issues/13785" target="_blank">Issue #13785</a>:
+    <a href="classWt_1_1WAbstractItemView.html#ae68d56771c5e9d408d78b4b9d198967f" target="_blank">WAbstractItemView::scrollTo()</a> now also
+    takes the column of the index into account when scrolling to an item. It is now also possible to specify different hints for the row and
+    column when scrolling to an item.
+
+    Additionally, some bugs linked to scrolling were fixed for both
+    <a href="classWt_1_1WTableView.html" target="_blank">WTableView</a> and
+    <a href="classWt_1_1WTreeView.html" target="_blank">WTreeView</a>.
+  </li>
+  <li>
+    <a href="https://redmine.webtoolkit.eu/issues/7986" target="_blank">Issue #7986</a>:
+    added caching for form objects data on the server side to reduce the size of the request sent to the server by the client.
+    This can be disabled by setting the <code>form-data-caching</code> option to <code>false</code> in the <code>wt_config.xml</code> file.
+
+    Note that this reduction in request size may come at the cost of an increase response size when updating form objects. It is possible
+    to limit this impact by changing the <code>form-data-resend-ratio-limit</code> option in the <code>wt_config.xml</code> file.
+  </li>
+  <li>
+    <a href="https://redmine.emweb.be/issues/14305" target="_blank">Issue #14305</a>:
+    added the possibility to change the format of the access logs using
+    <a href="classWt_1_1WServer.html#ac513e830dbe4eb582bfc37b27826c7c1" target="_blank">WServer::setAccessLoggerFormat()</a>.
+
+    Additionally, the access logger is now accessible through the new
+    <a href="classWt_1_1WServer.html#acc962bccafdd3345b2d4e39e6b9baf31" target="_blank">WServer::accessLogger()</a> function, which
+    allows to change the output file of the access logger at runtime. To complement this, it is now also possible to change
+    whether the access logs are redirected to the standard logger or not using
+    <a href="classWt_1_1WServer.html#a3aeddcc6ac27fab56874747b3dddee71" target="_blank">WServer::setRedirectAccessLog()</a>.
+  </li>
+  <li>
+    <a href="https://redmine.emweb.be/issues/12940" target="_blank">Issue #12940</a>:
+    Added
+    <a href="classWt_1_1WTextF.html" target="_blank">WTextF</a> which is text that can be exposed to the client side. This allows developers to handle updates to the text of a
+    <a href="classWt_1_1WPaintedWidget.html" target="_blank">WPaintedWidget</a> directly on the client side.
+    <a href="classWt_1_1WPaintDevice.html" target="_blank">WPaintDevice</a>, and
+    <a href="classWt_1_1WPainter.html" target="_blank">WPainter</a> have been updated to use WTextF instead of
+    <a href="classWt_1_1WString.html" target="_blank">WString</a>.
+  </li>
+</ul>
+
+<p>Wt 4.13.0 also fixes the following bugs:</p>
+
+<ul>
+  <li>
+    <a href="https://redmine.emweb.be/issues/14441" target="_blank">Issue #14441</a>:
+    fixed segmentation fault that could occur when deleting a
+    <a href="classWt_1_1WApplication.html" target="_blank">WApplication</a> that had a
+    <a href="classWt_1_1WDialog.html" target="_blank">WDialog</a> open.
+  </li>
+  <li>
+    <a href="https://redmine.emweb.be/issues/14447" target="_blank">Issue #14447</a>:
+    fixed
+    <a href="classWt_1_1WRadioButton.html" target="_blank">WRadioButton</a> never being set to the checked state
+    from the client side when not being inside a
+    <a href="classWt_1_1WButtonGroup.html" target="_blank">WButtonGroup</a>.
+  </li>
+  <li>
+    <a href="https://redmine.emweb.be/issues/14416" target="_blank">Issue #14416</a>:
+    fixed
+    <a href="classWt_1_1WWebWidget.html#aa140064593fa5f47ebdf26fcf71c4948" target="_blank">WWebWidget::setSelectable(true)</a> preventing selection instead of allowing it.
+    This caused several widgets to have unselectable text, like in
+    <a href="https://redmine.emweb.be/issues/14310" target="_blank">issue #14310</a>.
+  </li>
+  <li>
+    <a href="https://redmine.emweb.be/issues/14035" target="_blank">Issue #14035</a>:
+    fixed
+    <a href="classWt_1_1WBoxLayout.html#a3484fc08d50ec25c3f596cf6c9aea500" target="_blank">WHBoxLayout::itemAt()</a>,
+    <a href="classWt_1_1WBoxLayout.html#a3484fc08d50ec25c3f596cf6c9aea500" target="_blank">WVBoxLayout::itemAt()</a>, and
+    <a href="classWt_1_1WGridLayout.html#a77fef7a57e94c094ca88105874db028b" target="_blank">WGridLayout::itemAt()</a> not checking that
+    the given index was in the valid range, leading to segfault instead of returning nullptr.
+  </li>
+  <li>
+    <a href="https://redmine.emweb.be/issues/14455" target="_blank">Issue #14455</a>:
+    fixed widgets in layout with
+    <a href="namespaceWt.html#aeb0e4f49ce4a28d8ce9b0c6005027876" target="_blank">Wt::LayoutImplementation::Flex</a>
+    not having their preferred size updated after being resized.
+  </li>
+  <li>
+    <a href="https://redmine.emweb.be/issues/14436" target="_blank">Issue #14436</a>:
+    fixed some cases where widgets in a layout with
+    <a href="namespaceWt.html#aeb0e4f49ce4a28d8ce9b0c6005027876" target="_blank">Wt::LayoutImplementation::Flex</a>
+    would be partially hidden instead of shrinking.
+  </li>
+  <li>
+    <a href="https://redmine.emweb.be/issues/13574" target="_blank">Issue #13574</a>:
+    fixed
+    <a href="classWt_1_1WTableView.html" target="_blank">WTableView</a> headers label
+    alignment when aligning to the right or the center.
+  </li>
+  <li>
+    <a href="https://redmine.emweb.be/issues/14053" target="_blank">Issue #14053</a>:
+    fixed
+    <a href="classWt_1_1WAbstractProxyModel.html" target="_blank">WAbstractProxyModel</a> not using the overridden version of
+    <a href="classWt_1_1WAbstractItemModel.html#a4d7fa5951281dd9b623c9afd7ed9c2ef" target="_blank">WAbstractItemModel::dropEvent()</a> when handling drop events.
+  </li>
+  <li>
+    Fixed
+    <a href="classWt_1_1WRasterImage.html" target="_blank">WRasterImage</a> unable to read dataUri when using
+    <a href="http://www.graphicsmagick.org/" target="_blank">GraphicsMagick</a>.
+  </li>
+  <li>
+    <a href="https://redmine.emweb.be/issues/14504" target="_blank">Issue #14504</a>:
+    fixed
+    <a href="classWt_1_1WItemDelegate.html#ad846a8933d846fc43394bb6d5fd78d7e" target="_blank">WItemDelegate::editState()</a> and
+    <a href="classWt_1_1WItemDelegate.html#aa1519431acb606b62b9d4f8faf279d03" target="_blank">WItemDelegate::setEditState()</a>
+    segfaulting when the editor widget was not a
+    <a href="classWt_1_1WLineEdit.html" target="_blank">WLineEdit</a>. It will now log an error instead of crashing.
+  </li>
+  <li>
+    <a href="https://redmine.emweb.be/issues/14427" target="_blank">Issue #14427</a>:
+    fixed a SIGFPE that could happen when using
+    <a href="classWt_1_1WLocalizedStrings.html#a2f50fd381c0757539a635a9992eebdab" target="_blank">WLocalizedStrings::evaluatePluralExpression()</a>.
+  </li>
+  <li>
+    <a href="https://redmine.emweb.be/issues/14431" target="_blank">Issue #14431</a>:
+    added a workaround for libc++ not supporting <code>std::chrono::clock_cast</code> yet,
+    as this was causing a compilation error when compiling with libc++ with c++ version 20.
+  </li>
+</ul>
+
+<p>Wt 4.13.0 also comes with the following improvements:</p>
+
+<ul>
+  <li>
+    <a href="https://redmine.emweb.be/issues/13841" target="_blank">Issue #13841</a>:
+    added the ability to retrieve the currently focused widget in a Wt application using
+    <a href="classWt_1_1WApplication.html#a1918508a02889373a9e1fc1d872f2753" target="_blank">WApplication::focusedWidget()</a>,
+    or its ID using
+    <a href="classWt_1_1WApplication.html#a7e094aee22c9ce9ad74ed76a11e1b109" target="_blank">WApplication::focus()</a>.
+  </li>
+  <li>
+    <a href="https://redmine.emweb.be/issues/9328" target="_blank">Issue #9328</a>:
+    improved the positioning of tooltips so that they do not go outside of the screen and
+    add a vertical scrollbar to the tooltip if necessary.
+  </li>
+  <li>
+    <a href="https://redmine.emweb.be/issues/13789" target="_blank">Issue #13789</a>:
+    added support for more
+    <a href="group__signalslot.html#ga34e65660d30e69c56aa636a8856aa52d" target="_blank">Key</a>s in
+    <a href="classWt_1_1WKeyEvent.html" target="_blank">WKeyEvent</a>.
+  </li>
+  <li>
+    <a href="https://redmine.emweb.be/issues/14209" target="_blank">Issue #14209</a>:
+    removed all uses of <code>asio::strand::wrap()</code> to avoid deprecated warnings
+    when compiling Wt with boost 1.90.0 or later.
+  </li>
+  <li>
+    <a href="https://redmine.emweb.be/issues/14459" target="_blank">Issue #14459</a>:
+    added more strictness to incoming GET requests. In <a href="https://redmine.emweb.be/issues/13970" target="_blank">Issue #13970</a>,
+    we already ensure that a <code>wtd</code> alone in a new request would be considered suspect. Now we add <code>signal</code> (in itself) as a suspect
+    parameter too. When combined, they are allowed.
+  </li>
+  <li>
+    <a href="https://redmine.emweb.be/issues/14420" target="_blank">Issue #14420</a>:
+    made
+    <a href="classWt_1_1Dbo_1_1collection_1_1iterator.html" target="_blank">Dbo::collection::iterator</a> and
+    <a href="classWt_1_1Dbo_1_1collection_1_1const__iterator.html" target="_blank">Dbo::collection::const_iterator</a>
+    default constructible so that
+    <a href="classWt_1_1Dbo_1_1collection.html" target="_blank">Dbo::collection</a>
+    can be used inside <code>std::ranges::end()</code>.
+  </li>
+  <li>
+    <a href="https://redmine.emweb.be/issues/14467" target="_blank">Issue #14467</a>:
+    replaced the use of the deprecated <code>unload</code> event with <code>pagehide</code>
+    to know when a page is being unloaded by the browser.
+  </li>
+</ul>
+
+<h2>Release 4.12.6 (March 17, 2026)</h2>
+
+<p>Wt 4.12.6 is a patch release that addresses the following issues:</p>
+
+<ul>
+  <li>
+    <a href="https://redmine.emweb.be/issues/14376" target="_blank">Issue #14376</a>:
+    fixed
+    <a href="classWt_1_1WTableView.html#a4e5900e1c92219763c7b5d4a9e1ac2c5" target="_blank">WTableView::itemWidget()</a>
+    wrongly returning unrendered widgets when used in plain HTML mode. This could then also lead to a segmentation fault when
+    trying to modify the headers before the view was rendered.
+  </li>
+  <li>
+    <a href="https://redmine.emweb.be/issues/14066" target="_blank">Issue #14066</a>:
+    fixed
+    <a href="classWt_1_1WTableView.html" target="_blank">WTableView</a> header columns not
+    always having the same height as the content columns, which lead to several issues.
+  </li>
+  <li>
+    <a href="https://redmine.emweb.be/issues/14319" target="_blank">Issue #14319</a>:
+    fixed <a href="classWt_1_1WTableView.html" target="_blank">WTableView</a> sometimes not updating after
+    a client-side resize.
+
+    Additionally, fixed
+    <a href="classWt_1_1WTableView.html#a093b661f93551c1d6f73c423ae8ef459" target="_blank">WTableView::scrollTo()</a> with
+    <a href="namespaceWt.html#ae0fdcefe4b1fefe747b5f423c020334aa47ec5fd00436263c0d6b91bf575ea690" target="_blank">ScrollHint::EnsureVisible</a>
+    inverting top and bottom.
+  </li>
+  <li>
+    <a href="https://redmine.emweb.be/issues/14332" target="_blank">Issue #14332</a>:
+    fixed
+    <a href="classWt_1_1WDialog.html" target="_blank">WDialog</a>'s content being cut off when containing a
+    <a href="classWt_1_1WTableView.html" target="_blank">WTableView</a> with a width bigger than the dialog itself.
+  </li>
+  <li>
+    <a href="https://redmine.emweb.be/issues/14293" target="_blank">Issue #14293</a>:
+    fixed
+    <a href="classWt_1_1WDialog.html" target="_blank">WDialog</a> fitting to its content in
+    <a href="classWt_1_1WBootstrap2Theme.html" target="_blank">WBootstrap2Theme</a> and
+    <a href="classWt_1_1WBootstrap3Theme.html" target="_blank">WBootstrap3Theme</a>.
+  </li>
+  <li>
+    <a href="https://redmine.emweb.be/issues/13958" target="_blank">Issue #13958</a>:
+    corrected a JavaScript error when using <a href="namespaceWt.html#aeb0e4f49ce4a28d8ce9b0c6005027876" target="_blank">Wt::LayoutImplementation::Flex</a>
+    with a disabled ancestor widget.
+  </li>
+  <li>
+    <a href="https://redmine.emweb.be/issues/13692" target="_blank">Issue #13692</a>:
+    fixed JS layouts in <a href="classWt_1_1WStackedWidget.html" target="_blank">WStackedWidget</a>
+    not being updated after being switched in with an animation. This would lead to the
+    content of the layout being fitted to the size of the old container.
+  </li>
+  <li>
+    <a href="https://redmine.emweb.be/issues/14352" target="_blank">Issue #14352</a>:
+    fixed compilation error that could happen when using clang with C++20 with the
+    <code>WT_CPP17_FILESYSTEM_IMPLEMENTATION="std"</code> option.
+  </li>
+  <li>
+    <a href="https://redmine.emweb.be/issues/14395" target="_blank">Issue #14395</a>:
+    added the scope to some <code>target_compile_definitions</code> where they were missing.
+  </li>
+  <li>
+    <a href="https://redmine.emweb.be/issues/14268" target="_blank">Issue #14268</a>:
+    fixed a use-after-free in the <code>wthttp connector</code> that could happen when closing the server.
+  </li>
+</ul>
+
+<p>Wt 4.12.6 also comes with the following improvements:</p>
+
+<ul>
+  <li>
+    <a href="https://redmine.emweb.be/issues/14356" target="_blank">Issue #14356</a>:
+    ensured that
+    <a href="classWt_1_1WDialog.html" target="_blank">WDialog</a> top-left corner is visible when the dialog
+    position is automatically determined by wt.
+  </li>
+  <li>
+    <a href="https://redmine.emweb.be/issues/14380" target="_blank">Issue #14380</a>:
+    changed the style class <code>.in</code> for <code>.show</code> when using
+    <a href="classWt_1_1WBootstrap5Theme.html" target="_blank">WBootstrap5Theme</a> as it is the
+    correct class to use for Bootstrap 5.
+  </li>
+</ul>
+
+<h2>Release 4.12.5 (March 3, 2026)</h2>
+
+<p>Wt 4.12.5 is a patch release that addresses the following issues:</p>
+
+<ul>
+  <li>
+    <a href="https://redmine.emweb.be/issues/14371" target="_blank">Issue #14371</a>:
+    fixed
+    <a href="classWt_1_1Auth_1_1AuthWidget.html" target="_blank">Auth::AuthWidget</a> sometimes reloading the page
+    just after being created.
+  </li>
+</ul>
+
+<h2>Release 4.12.4 (March 2, 2026)</h2>
+
+<p>Wt 4.12.4 is a patch release that addresses the following issues:</p>
+
+<ul>
+  <li>
+    <a href="https://redmine.emweb.be/issues/14355" target="_blank">Issue #14355</a>:
+    fixed
+    <a href="classWt_1_1WRadioButton.html" target="_blank">WRadioButton</a> inside a
+    <a href="classWt_1_1WButtonGroup.html" target="_blank">WButtonGroup</a> not being
+    updated on the server side when changed on the client side.
+  </li>
+  <li>
+    <a href="https://redmine.emweb.be/issues/11505" target="_blank">Issue #11505</a>:
+    <a href="classWt_1_1WAbstractItemModel.html#a3c4a0ffe050bc0d11feeac4749dde784" target="_blank">WStandardItemModel::setHeaderData()</a> will now
+    correctly return false instead of making Wt crash when given a wrong section. An error will be logged to let
+    the developer know a wrong section was given.
+  </li>
+  <li>
+    <a href="https://redmine.emweb.be/issues/13417" target="_blank">Issue #13417</a>:
+    fixed a heap buffer overflow when using <code>Auth::AuthUtils::createSalt()</code> with a size that is
+    not a multiple of 3.
+  </li>
+</ul>
+
+<p>Wt 4.12.4 also comes with the following improvements:</p>
+
+<ul>
+  <li>
+    <a href="https://redmine.emweb.be/issues/13498" target="_blank">Issue #13498</a>:
+    <a href="classWt_1_1Auth_1_1AuthModel.html" target="_blank">Auth::AuthModel</a> will now change session id on logout as recommended by
+    <a href="https://owasp.org/" target="_blank">OWASP</a>.
+  </li>
+  <li>
+    <a href="https://redmine.emweb.be/issues/13537" target="_blank">Issue #13537</a>:
+    <a href="classWt_1_1Dbo_1_1Query.html" target="_blank">Dbo::Query</a> with
+    <a href="structWt_1_1Dbo_1_1DirectBinding.html" target="_blank">DirectBinding</a> as <code>BindStrategy</code> are now deprecated and
+    will be completely removed later. <a href="structWt_1_1Dbo_1_1DynamicBinding.html" target="_blank">DynamicBinding</a> <code>BindStrategy</code>
+    should be used instead.
+  </li>
+</ul>
+
 <h2>Release 4.12.3 (February 20, 2026)</h2>
 
 <p> Wt 4.12.3 is a patch release that addresses the following issues: </p>
 
 <dl class="section note">
-  <dt>CVE (ID pending)</dt>
+  <dt>CVE-2026-35910</dt>
   <dd>
     Addressed a Use-After-Free vulnerability in the <code>wthttp connector</code>. See
     <a href="https://redmine.emweb.be/issues/14136" target="_blank">Issue #14136</a> for more details.

@@ -228,6 +228,11 @@ public:
 
   virtual void scrollTo(const WModelIndex& index,
                         ScrollHint hint = ScrollHint::EnsureVisible) override;
+
+  void scrollTo(const WModelIndex& index,
+                ScrollHint rowHint,
+                ScrollHint columnHint) override;
+
   virtual EventSignal<WScrollEvent>& scrolled() override;
 
   virtual void setId(const std::string &id) override;
@@ -238,6 +243,11 @@ protected:
 
 private:
   typedef std::unordered_map<WModelIndex, WTreeViewNode *> NodeMap;
+
+  static const int BIT_RENDERED_NODES_ADDED = 0;
+  static const int BIT_SCROLLBAR_CONTAINER_ADDED = 1;
+
+  std::bitset<2> flags_;
 
   bool skipNextMouseEvent_;
 
@@ -254,6 +264,9 @@ private:
 
   // in rows, as indicated by the current position of the viewport:
   int viewportTop_, viewportHeight_;
+
+  // in pixels
+  int viewportLeft_, viewportWidth_;
 
   // the firstRenderedRow may differ from viewportTop_, because the user
   // adjusted the view port slightly, but not enough to trigger a correction
@@ -382,6 +395,11 @@ private:
   }
 
   virtual WWidget *headerWidget(int column, bool contentsOnly = true) override;
+
+  int columnWidthWithPadding(int column) const;
+  int sumColumnWidthsBefore(int column) const;
+
+  void onScrollBarColumnScroll(WScrollEvent event);
 
   friend class WTreeViewNode;
   friend class ContentsContainer;

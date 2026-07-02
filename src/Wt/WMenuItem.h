@@ -7,6 +7,7 @@
 #ifndef WMENU_ITEM_H_
 #define WMENU_ITEM_H_
 
+#include <Wt/WBadge.h>
 #include <Wt/WContainerWidget.h>
 #include <Wt/WString.h>
 
@@ -93,6 +94,20 @@ public:
    * \sa setIcon()
    */
   std::string icon() const;
+
+  /*! \brief Sets the item's badge.
+   *
+   * To remove the badge again, call this function with \p nullptr.
+   *
+   * \sa removeWidget()
+   */
+  void setBadge(std::unique_ptr<WBadge> badge);
+
+  /*! \brief Returns the item's badge.
+   *
+   * \sa setBadge()
+   */
+  WBadge* badge() const { return badge_; };
 
   /*! \brief Sets if the item is checkable.
    *
@@ -356,6 +371,8 @@ public:
                          const WAnimation& animation = WAnimation()) override;
   virtual void setDisabled(bool disabled) override;
 
+  std::unique_ptr<WWidget> removeWidget(WWidget* widget) override;
+
 protected:
   virtual void render(WFlags<RenderFlag> flags) override;
 
@@ -373,6 +390,7 @@ private:
   WText *icon_;
   WLabel *text_;
   WCheckBox *checkBox_;
+  WBadge *badge_;
   void *data_;
   bool separator_, selectable_, signalsConnected_, customLink_, selectConnected_, menuItemCheckedConnected_;
 
@@ -402,6 +420,7 @@ private:
   void setCheckBox();
   void setUnCheckBox();
   void menuItemCheckedPropagate();
+  void updateMenuZIndex();
   std::string pathComponentFromText() const;
 
   std::unique_ptr<WWidget> takeContentsForStack();

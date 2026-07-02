@@ -8,6 +8,7 @@
 #define WAPPLICATION_
 
 #include <chrono>
+#include <memory>
 #include <unordered_map>
 #include <vector>
 #include <string>
@@ -25,10 +26,12 @@ namespace boost {
 #include <Wt/WCssStyleSheet.h>
 #include <Wt/WEnvironment.h>
 #include <Wt/WEvent.h>
+#include <Wt/WFavicon.h>
 #include <Wt/WJavaScriptPreamble.h>
 #include <Wt/WJavaScriptSlot.h>
 #include <Wt/WLocale.h>
 #include <Wt/WMessageResourceBundle.h>
+#include <Wt/WNotification.h>
 #include <Wt/WSignal.h>
 #include <Wt/WString.h>
 
@@ -302,6 +305,17 @@ public:
    * \sa WWidget::setObjectName(), WWidget::find()
    */
   WWidget *findWidget(const std::string& name);
+
+  /*! \brief Finds a widget by id.
+   *
+   * This finds a widget in the application's widget hierarchy. It
+   * does not only consider widgets in the root(), but also widgets
+   * that are placed outside this root, such as in dialogs, or other
+   * "roots" such as all the bound widgets in a widgetset application.
+   *
+   * \sa WWidget::id(), WWidget::findById()
+   */
+  WWidget* findById(const std::string& id) const;
 
   /** @name Style sheets and CSS
    */
@@ -1887,6 +1901,24 @@ public:
    */
   WLoadingIndicator *loadingIndicator() const { return loadingIndicator_; }
 
+  /*! \brief Sets the favicon for this application.
+   *
+   * This sets the favicon for this application. This overwrite the
+   * favicon defined in the configuration unless the favicon is a
+   * nullptr, in which case the favicon defined in the configuration
+   * is used.
+   */
+  void setFavicon(std::unique_ptr<WFavicon> icon);
+
+  /*! \brief Returns the favicon of this application.
+   *
+   * Returns the last favicon set to this application using
+   * setFavicon().
+   *
+   * \sa setFavicon()
+   */
+  WFavicon *favicon() const;
+
   /*
    * A url to a resource that provides a one pixel gif. This is sometimes
    * useful for CSS hackery to make IE behave.
@@ -2015,6 +2047,28 @@ public:
    * Methods for client-side focus
    */
   void setFocus(const std::string& id, int selectionStart, int selectionEnd);
+
+  void setFocus(WWidget* widget, int selectionStart, int selectionEnd);
+
+  /*! \brief Returns the id of the widget that has focus.
+   *
+   * This returns the id of the widget that has focus, or an empty
+   * string if no widget has focus.
+   *
+   * \sa focusedWidget(),
+   *     WWebWidget::focussed(),
+   *     WWebWidget::setFocus()
+   */
+  std::string focus() const { return focusId_; }
+
+  /*! \brief Returns the widget that has focus.
+   *
+   * This returns the widget that has focus, or \c nullptr if no
+   * widget has focus or if the focused widget has been deleted.
+   *
+   * \sa focus(), WWebWidget::focussed(), WWebWidget::setFocus()
+   */
+  WWidget* focusedWidget() const;
 
 #ifdef WT_DEBUG_JS
   void loadJavaScript(const char *jsFile);
@@ -2407,7 +2461,9 @@ private:
 #ifndef WT_TARGET_JAVA
   bool initialized_;
 #endif // WT_TARGET_JAVA
+  bool beingDeleted_;
   std::string focusId_;
+  mutable observing_ptr<WWidget> focusedWidget_;
   int selectionStart_, selectionEnd_;
   LayoutDirection layoutDirection_;
   std::unordered_map<std::string, std::string> htmlAttributes_;
@@ -2462,6 +2518,10 @@ private:
   const std::string* findAddedCookies(const std::string& name) const;
   // Remove the added cookie, for correct bookkeeping.
   void removeAddedCookies(const std::string& name);
+
+  bool notificationPermissionAsked_;
+  JSignal<std::string> updateNotificationPermission_;
+  Signal<WNotification::Permission> notificationPermissionChanged_;
 
   WContainerWidget *timerRoot() const { return timerRoot_; }
   WEnvironment& env(); // short-hand for session_->env()
@@ -2523,6 +2583,7 @@ private:
   bool exposeSignals() const { return exposeSignals_; }
   void doUnload();
   void doIdleTimeout();
+  void onUpdateNotificationPermission(const std::string& permission);
 
 #ifndef WT_TARGET_JAVA
   int startWaitingAtLock();
@@ -2530,9 +2591,9 @@ private:
 #endif // WT_TARGET_JAVA
 
   void setAsFocus(const std::string& id);
-  std::string focus() const { return focusId_; }
   int selectionStart() const { return selectionStart_; }
   int selectionEnd() const { return selectionEnd_; }
+  void setFocusedWidget(WWidget *widget);
 
   WLocalizedStrings *localizedStringsPack();
 
@@ -2545,6 +2606,13 @@ private:
   // Server-side font metrics, constructed once (on demand),
   // and reused by all painters that require it.
   std::unique_ptr<ServerSideFontMetrics> serverSideFontMetrics_;
+
+  /*
+   * Methods for favicon handling
+   */
+  std::unique_ptr<WFavicon> favicon_;
+  std::string faviconUrl_;
+  void streamFaviconUpdate(WStringStream& out);
 
   static const char *RESOURCES_URL;
 
@@ -2568,6 +2636,7 @@ private:
   friend class WInteractWidget;
   friend class WLineEdit;
   friend class WMenu;
+  friend class WNotification;
   friend class WResource;
   friend class WSelfDeletingResource;
   friend class WSound;

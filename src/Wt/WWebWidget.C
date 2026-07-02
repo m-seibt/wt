@@ -59,7 +59,7 @@ const int WWebWidget::DEFAULT_BASE_Z_INDEX = 1100;
 const int WWebWidget::Z_INDEX_INCREMENT = 1100;
 
 #ifndef WT_TARGET_JAVA
-const std::bitset<42> WWebWidget::AllChangeFlags = std::bitset<42>()
+const std::bitset<44> WWebWidget::AllChangeFlags = std::bitset<44>()
   .set(BIT_FLEX_BOX_CHANGED)
   .set(BIT_HIDDEN_CHANGED)
   .set(BIT_GEOMETRY_CHANGED)
@@ -153,9 +153,17 @@ WStatelessSlot *WWebWidget::getStateless(Method method)
 void WWebWidget::setFormObject(bool how)
 {
   flags_.set(BIT_FORM_OBJECT, how);
+  flags_.set(BIT_RESEND_FORM_DATA, true);
 
   WApplication::instance()
     ->session()->renderer().updateFormObjects(this, false);
+}
+
+bool WWebWidget::resendFormData()
+{
+  bool resend = flags_.test(BIT_RESEND_FORM_DATA);
+  flags_.reset(BIT_RESEND_FORM_DATA);
+  return resend;
 }
 
 void WWebWidget::setId(const std::string& id)
@@ -1748,7 +1756,7 @@ void WWebWidget::updateDom(DomElement& element, bool all)
       // All event handlers ought to be JS, not DOM: #13501
       WStringStream selectJS;
       selectJS << WT_CLASS << ".$('" << id() << "').onselectstart = "
-               << "function() { event.cancelBubble=true; return false; };";
+               << "function() { event.cancelBubble=true; return true; };";
       Wt::WApplication::instance()->doJavaScript(selectJS.str());
     }
 
@@ -2136,13 +2144,18 @@ void WWebWidget::setFocus(bool focus)
 
   WApplication *app = WApplication::instance();
   if (focus)
-    app->setFocus(id(), -1, -1);
+    app->setFocus(this, -1, -1);
   else if (app->focus() == id())
-    app->setFocus(std::string(), -1, -1);
+    app->setFocus(nullptr, -1, -1);
 }
 
 void WWebWidget::undoSetFocus()
 { }
+
+void WWebWidget::onFocus()
+{
+  WApplication::instance()->setFocusedWidget(this);
+}
 
 bool WWebWidget::hasFocus() const
 {
@@ -2165,6 +2178,11 @@ void WWebWidget::getFormObjects(FormObjectsMap& formObjects)
     ([&](WWidget *c) {
       c->webWidget()->getSFormObjects(formObjects);
     });
+}
+
+void WWebWidget::formDataChanged()
+{
+  flags_.set(BIT_RESEND_FORM_DATA);
 }
 
 void WWebWidget::getDomChanges(std::vector<DomElement *>& result,
@@ -2590,6 +2608,10 @@ void WWebWidget::doLoad(WWidget *w)
 
 void WWebWidget::render(WFlags<RenderFlag> flags)
 {
+  if (!flags_.test(BIT_FOCUS_CONNECTED)) {
+    focussed().connect(this, &WWebWidget::onFocus);
+    flags_.set(BIT_FOCUS_CONNECTED);
+  }
   WWidget::render(flags);
 }
 
@@ -2807,11 +2829,7 @@ std::string WWebWidget::resolveRelativeUrl(const std::string& url)
 
 bool WWebWidget::removeScript(WString& text)
 {
-#ifndef WT_NO_XSS_FILTER
   return XSSFilterRemoveScript(text);
-#else
-  return true;
-#endif
 }
 
 bool WWebWidget::scrollVisibilityEnabled() const

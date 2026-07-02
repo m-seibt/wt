@@ -11,8 +11,8 @@ SET(CMAKE_MODULE_PATH
 )
 
 SET(VERSION_SERIES 4)
-SET(VERSION_MAJOR 12)
-SET(VERSION_MINOR 3)
+SET(VERSION_MAJOR 13)
+SET(VERSION_MINOR 4)
 
 IF(NOT SHARED_LIBS)
   IF(WIN32)
@@ -43,6 +43,7 @@ OPTION(ENABLE_QT5 "Build Qt5 interworking library (libwtwithqt5)" ON)
 OPTION(ENABLE_QT6 "Build Qt6 interworking library (libwtwithqt6)" ON)
 OPTION(ENABLE_SAML "Build built-in SAML service provider for Wt::Auth" OFF)
 OPTION(ENABLE_LIBWTTEST "Build Wt::Test" ON)
+OPTION(ENABLE_SELENIUM_TESTS "Build Wt::Test::Selenium (requires Python3)" OFF)
 OPTION(ENABLE_LIBWTDBO "Build Wt::Dbo" ON)
 OPTION(ENABLE_OPENGL "Build Wt with support for server-side opengl rendering" ON)
 OPTION(ENABLE_UNWIND "Build Wt with stacktrace support using libunwind" OFF)

@@ -26,6 +26,13 @@ class WIOService;
 #ifndef WT_TARGET_JAVA
 class WWebSocketResource;
 #endif // WT_TARGET_JAVA
+
+#ifdef WT_CNOR
+class ServletContext
+{
+  std::string getRealPath(std::string);
+};
+#endif //WT_CNOR
 /*! \class WServer Wt/WServer.h Wt/WServer.h
  *  \brief A class encapsulating a web application server.
  *
@@ -87,6 +94,10 @@ class WTCONNECTOR_API WServer
 public:
   typedef std::function<std::string (std::size_t max_length, int purpose)>
     SslPasswordCallback;
+
+#ifdef WT_CNOR
+  ServletContext getServletContext();
+#endif //WT_CNOR
 
   /*! \class Exception
    *  \brief Server %Exception class.
@@ -627,6 +638,64 @@ public:
   WT_API void setCustomLogger(const WLogSink &customLogger);
 
   const WLogSink * customLogger() const;
+
+#ifndef WT_TARGET_JAVA
+  /*! \brief Sets the format for the access logger.
+   *
+   * The format string can contain the following placeholders:
+   * - ${IP} : the remote IP address of the client
+   * - ${METHOD} : the HTTP method of the request (e.g. GET, POST, ...)
+   * - ${URI} : the URI of the request
+   * - ${HTTP_VERSION} : the HTTP version of the request (e.g. HTTP/1.1)
+   * - ${STATUS} : the HTTP status code of the response
+   * - ${CONTENT} : the content's size of the request
+   *
+   * \note This is only available with the wthttp connector, and has no
+   *       effect on other connectors.
+   */
+  WTCONNECTOR_API void setAccessLoggerFormat(const std::string& format);
+
+
+  /*! \brief Returns the format for the access logger.
+   *
+   * \note This always retunrs an empty string when not using the
+   *       wthttp connector.
+   *
+   * \sa setAccessLoggerFormat()
+   */
+  WTCONNECTOR_API std::string accessLoggerFormat() const;
+
+  /*! \brief Returns the access logger if it exists.
+   *
+   * \note This always returns nullptr when not using the wthttp
+   *       connector.
+   *
+   * \sa setAccessLoggerFormat(), setRedirectAccessLog()
+   */
+  WTCONNECTOR_API WLogger* accessLogger();
+
+  /*! \brief Sets whether access log redirection is enabled.
+   *
+   * When access log redirection is enabled, the access log will be
+   * logged like other log messages, using the server logger (default
+   * or custom).
+   *
+   * \note This is only available with the wthttp connector, and has no
+   *       effect with other connectors.
+   *
+   * \sa accessLogger(), setCustomLogger()
+   */
+  WTCONNECTOR_API void setRedirectAccessLog(bool redirect);
+
+  /*! \brief Returns whether access log redirection is enabled.
+   *
+   * \note This always returns true when not using the wthttp
+   *       connector.
+   *
+   * \sa setRedirectAccessLog(), accessLogger(), setCustomLogger()
+   */
+  WTCONNECTOR_API bool redirectAccessLog() const;
+#endif // WT_TARGET_JAVA
 
   /*! \brief Adds an entry to the log.
    *

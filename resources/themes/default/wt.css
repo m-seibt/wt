@@ -41,7 +41,7 @@ span.Wt-disabled, fieldset.Wt-disabled legend {
  * Silk screen
  */
 .Wt-dialogcover {
-  background: rgb(204, 204, 204); 
+  background: rgb(204, 204, 204);
   height: 100%; width: 100%;
   top: 0px; left: 0px;
   position: fixed;
@@ -70,6 +70,35 @@ span.Wt-disabled, fieldset.Wt-disabled legend {
   -webkit-transform: translate3d(0,0,0);
 }
 */
+
+/*
+ * WBadge
+ */
+ .Wt-badge {
+  display: inline-block;
+  position: relative;
+  min-width: 10px;
+  padding: 3px 7px;
+  font-size: 11px;
+  font-weight: bold;
+  line-height: 1;
+  color: #fff;
+  text-align: center;
+  white-space: nowrap;
+  vertical-align: middle;
+  background-color: #999999;
+  border-radius: 5px;
+}
+
+.Wt-badge:empty {
+  display: none;
+}
+
+.Wt-btn .Wt-badge,
+.item .Wt-badge,
+.itemselected .Wt-badge {
+  margin-inline-start: 2px;
+}
 
 /*
  * WCalendar
@@ -154,7 +183,7 @@ span.Wt-disabled, fieldset.Wt-disabled legend {
   border: 0px;
   border-right: 1px solid #E0E0E0;
   border-bottom: 1px solid #E0E0E0;
-  border-top: 1px solid #E0E0E0;    
+  border-top: 1px solid #E0E0E0;
   line-height: 140%;
 }
 
@@ -265,6 +294,14 @@ span.Wt-disabled, fieldset.Wt-disabled legend {
   font-size: 110%;
 }
 
+/*
+ * Fix dialog content being cut off see #14332
+ */
+.Wt-dialog .Wt-fill-width .body {
+  width: 100%;
+  box-sizing: border-box;
+}
+
 .Wt-dialog .body, .Wt-dialog .footer {
   padding: 4px 6px 4px;
 }
@@ -290,7 +327,7 @@ span.Wt-disabled, fieldset.Wt-disabled legend {
   background-position: right -8px;
 }
 
-/* 
+/*
  * WMessageBox
  */
 .Wt-dialog .Wt-msgbox-icon {
@@ -429,7 +466,7 @@ span.Wt-disabled, fieldset.Wt-disabled legend {
 
 .Wt-popupmenu li a {
   display: block;
-  padding: 2px 10px; 
+  padding: 2px 10px;
 }
 
 .Wt-popupmenu .Wt-padded {
@@ -603,7 +640,7 @@ span.Wt-disabled, fieldset.Wt-disabled legend {
   background-image: url('spin-buttons-dn.png');
 }
 
-/* 
+/*
  * WSuggestionPopup
  */
 .Wt-suggest {
@@ -702,14 +739,16 @@ body.Wt-rtl .Wt-tabs a {
  * XHTML Tooltips
  */
 .Wt-tooltip {
-  position: absolute;
-  max-width: 700px;
+  display: inline-block;
   background-color: #ffffcc;
   border: 1px solid black;
   padding: 1px 2px;
   font-family: sans-serif;
   font-size: smaller;
   z-index: 1000;
+  overflow-y: auto;
+  width: fit-content;
+  height: fit-content;
 }
 
 /*
@@ -842,7 +881,7 @@ body.Wt-rtl .Wt-sbspacer {
 
 .Wt-itemview .Wt-tv-rh {
   float: right;
-  width: 4px;
+  width: 3px;
   cursor: col-resize;
 }
 
@@ -975,13 +1014,6 @@ body.Wt-rtl .Wt-itemview .Wt-tv-sh {
 /*
  * WTableView
  */
-body.Wt-ltr .Wt-tableview .Wt-header .Wt-tv-c {
-  padding-left: 6px;
-}
-
-body.Wt-rtl .Wt-tableview .Wt-header .Wt-tv-c {
-  padding-right: 6px;
-}
 
 .Wt-tableview .Wt-tv-contents .Wt-tv-c,
 .Wt-plaintable .Wt-tv-c {
@@ -1011,6 +1043,22 @@ body.Wt-rtl .Wt-tableview .Wt-header .Wt-tv-c {
 
 .Wt-tableview th {
   padding: 0px;
+}
+
+.Wt-tableview .Wt-header .Wt-label {
+  padding-inline: 3px 0px;
+}
+
+.Wt-tableview .Wt-header .Wt-tv-no-rh ~ * > * > .Wt-label {
+  padding-inline-end: 3px;
+}
+
+.Wt-tableview .Wt-header div[style*="text-align:center;"] .Wt-tv-sh ~ .Wt-label {
+  padding-inline: 19px 0px;
+}
+
+.Wt-tableview .Wt-header .Wt-tv-no-rh ~ div[style*="text-align:center;"] > * > .Wt-tv-sh ~ .Wt-label {
+  padding-inline-start: 16px;
 }
 
 .Wt-tableview table {

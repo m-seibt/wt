@@ -10,17 +10,30 @@ WT_DECLARE_WT_MEMBER(
   1,
   JavaScriptConstructor,
   "WTableView",
-  function(APP, el, contentsContainer, initialScrollTop, headerContainer, headerColumnsContainer, selectedClass) {
+  function(
+    APP,
+    el,
+    contentsContainer,
+    initialScrollTop,
+    initialScrollLeft,
+    headerContainer,
+    headerColumnsContainer,
+    selectedClass
+  ) {
     el.wtObj = this;
 
     const self = this;
     const WT = APP.WT;
     const rtl = document.body.classList.contains("Wt-rtl");
+    const headerColumnsContainerId = headerColumnsContainer.id;
 
     const EnsureVisible = 0;
     const PositionAtTop = 1;
     const PositionAtBottom = 2;
     const PositionAtCenter = 3;
+    const PositionAtLeft = 4;
+    const PositionAtRight = 5;
+    const _NoScroll = 6;
 
     function rtlScrollLeft(o) {
       if (rtl) {
@@ -37,6 +50,7 @@ WT_DECLARE_WT_MEMBER(
     let scrollX1 = 0, scrollX2 = 0, scrollY1 = 0, scrollY2 = 0;
     let scrollToPendingCount = 0;
     let initialScrollTopSet = initialScrollTop === 0;
+    let initialScrollLeftSet = initialScrollLeft === 0;
 
     let itemDropsEnabled = false, betweenRowsDropsEnabled = false;
     let waitingForContent = true;
@@ -76,27 +90,84 @@ WT_DECLARE_WT_MEMBER(
     }
 
     this.onContentsContainerScroll = function() {
+      const headerColumnsContainerEl = WT.getElement(headerColumnsContainerId);
+
       scrollLeft =
         headerContainer.scrollLeft =
           contentsContainer.scrollLeft;
       scrollTop =
-        headerColumnsContainer.scrollTop =
+        headerColumnsContainerEl.scrollTop =
           contentsContainer.scrollTop;
       maybeEmitScrolled();
     };
 
-    contentsContainer.wtResize = function(o, w, h, _setSize) {
+    this.onHeaderContainerScroll = function() {
+      scrollLeft =
+        contentsContainer.scrollLeft =
+          headerContainer.scrollLeft;
+      maybeEmitScrolled();
+    };
+
+    this.onHeaderColumnsContainerScroll = function() {
+      const headerColumnsContainerEl = WT.getElement(headerColumnsContainerId);
+
+      scrollTop =
+        contentsContainer.scrollTop =
+          headerColumnsContainerEl.scrollTop;
+      maybeEmitScrolled();
+    };
+
+    contentsContainer.wtResize = function(o, _w, _h, _setSize) {
+      let callOnscroll = false;
+
       if (!initialScrollTopSet) {
         o.scrollTop = initialScrollTop;
-        o.onscroll();
+        callOnscroll = true;
         initialScrollTopSet = true;
       }
+
+      if (!initialScrollLeftSet) {
+        o.scrollLeft = initialScrollLeft;
+        callOnscroll = true;
+        initialScrollLeftSet = true;
+      }
+
+      if (callOnscroll) {
+        o.onscroll();
+      }
+
+      const headerColumnsContainerEl = WT.getElement(headerColumnsContainerId);
+
+      // Set the height of the contentscontainer to fit the size of the wrapping table.
+      const height = headerContainer.offsetHeight;
+      const table = headerContainer.closest(".Wt-tableview");
+      const avoidHorizontalBorderOverlapOffset = WT.pxComputedStyle(table, "borderTopWidth") +
+        WT.pxComputedStyle(table, "borderBottomWidth");
+      const parentHeight = table.offsetHeight - avoidHorizontalBorderOverlapOffset;
+      const newHeight = parentHeight - height;
+
+      contentsContainer.style.height = newHeight + "px";
+
+      // Set the width of the contentscontainer to fit the size of the wrapping table.
+      const width = headerColumnsContainerEl.offsetWidth;
+      const avoidVerticalBorderOverlapOffset = WT.pxComputedStyle(table, "borderLeftWidth") +
+        WT.pxComputedStyle(table, "borderRightWidth");
+      const parentWidth = table.offsetWidth - avoidVerticalBorderOverlapOffset;
+      const newWidth = parentWidth - width;
+
+      contentsContainer.style.width = newWidth + "px";
+
+      // Set the height of the headercolumnscontainer to fit the size of the wrapping table.
+      const scrollheight = contentsContainer.offsetHeight - contentsContainer.clientHeight;
+
+      headerColumnsContainerEl.style.height = newHeight - scrollheight + "px";
+
       if (
-        (w - currentWidth) > (scrollX2 - scrollX1) / 2 ||
-        (h - currentHeight) > (scrollY2 - scrollY1) / 2
+        (newWidth - currentWidth) > (scrollX2 - scrollX1) / 2 ||
+        (newHeight - currentHeight) > (scrollY2 - scrollY1) / 2
       ) {
-        currentWidth = w;
-        currentHeight = h;
+        currentWidth = newWidth;
+        currentHeight = newHeight;
         const height = o.clientHeight === o.firstChild.offsetHeight ?
           -1 :
           o.clientHeight;
@@ -109,19 +180,6 @@ WT_DECLARE_WT_MEMBER(
           Math.round(height)
         );
       }
-
-      // Set the height of the contentscontainer to fit the size of the wrapping table.
-      const height = headerContainer.offsetHeight;
-      const avoidBorderOverlapOffset = 2;
-      const parentHeight = headerContainer.closest(".Wt-tableview").offsetHeight - avoidBorderOverlapOffset;
-
-      contentsContainer.style.height = parentHeight - height + "px";
-
-      // Set the width of the contentscontainer to fit the size of the wrapping table.
-      const width = headerColumnsContainer.offsetWidth;
-      const parentWidth = headerContainer.closest(".Wt-tableview").offsetWidth - avoidBorderOverlapOffset;
-
-      contentsContainer.style.width = parentWidth - width + "px";
     };
 
     function isSelected(item) {
@@ -178,12 +236,14 @@ WT_DECLARE_WT_MEMBER(
         delta = -delta;
       }
 
+      const headerColumnsContainerEl = WT.getElement(headerColumnsContainerId);
+
       const columnClass = header.className.split(" ")[0],
         columnId = columnClass.substring(7) * 1,
         headers = header.parentNode,
         headerColumn = headers.parentNode !== headerContainer,
         contents = headerColumn ?
-          headerColumnsContainer.firstChild :
+          headerColumnsContainerEl.firstChild :
           contentsContainer.firstChild,
         wt_tv_contents = contents.firstChild,
         column = contents.querySelector("." + columnClass),
@@ -199,14 +259,14 @@ WT_DECLARE_WT_MEMBER(
           cwidth;
 
       if (headerColumn) {
-        headerColumnsContainer.style.width = cwidth;
-        headerColumnsContainer.firstChild.style.width = cwidth;
+        headerColumnsContainerEl.style.width = cwidth;
+        headerColumnsContainerEl.firstChild.style.width = cwidth;
         contentsContainer.style.left = cwidth;
         headerContainer.style.left = cwidth;
       }
 
       header.style.width = (newWidth + 1) + "px";
-      column.style.width = (newWidth + 7) + "px";
+      column.style.width = (newWidth + 1) + "px";
       APP.layouts2.adjust(el.childNodes[0].id, [[1, 1]]);
 
       for (; h; h = h.nextSibling) {
@@ -345,10 +405,11 @@ WT_DECLARE_WT_MEMBER(
     };
 
     this.resetScroll = function() {
+      const headerColumnsContainerEl = WT.getElement(headerColumnsContainerId);
       headerContainer.scrollLeft = scrollLeft;
       contentsContainer.scrollLeft = scrollLeft;
       contentsContainer.scrollTop = scrollTop;
-      headerColumnsContainer.scrollTop = scrollTop;
+      headerColumnsContainerEl.scrollTop = scrollTop;
     };
 
     this.setScrollToPending = function() {
@@ -361,22 +422,41 @@ WT_DECLARE_WT_MEMBER(
       this.resetScroll();
     };
 
-    this.scrollTo = function(x, y, hint) {
+    this.scrollTo = function(x, y, colHint, rowHint, colWidth) {
       if (scrollToPendingCount > 0) {
         scrollToPendingCount -= 1;
       }
       if (y !== -1) {
         const top = contentsContainer.scrollTop,
-          height = contentsContainer.clientHeight;
-        if (hint === EnsureVisible) {
-          if (top + height < y) {
-            hint = PositionAtTop;
+          height = contentsContainer.clientHeight,
+          left = contentsContainer.scrollLeft,
+          width = contentsContainer.clientWidth;
+
+        if (
+          rowHint === EnsureVisible ||
+          rowHint === PositionAtLeft ||
+          rowHint === PositionAtRight
+        ) {
+          if (top + height < y + rowHeight()) {
+            rowHint = PositionAtBottom;
           } else if (y < top) {
-            hint = PositionAtBottom;
+            rowHint = PositionAtTop;
           }
         }
 
-        switch (hint) {
+        if (
+          colHint === EnsureVisible ||
+          colHint === PositionAtTop ||
+          colHint === PositionAtBottom
+        ) {
+          if (left + width < x + colWidth) {
+            colHint = PositionAtRight;
+          } else if (x < left) {
+            colHint = PositionAtLeft;
+          }
+        }
+
+        switch (rowHint) {
           case PositionAtTop:
             contentsContainer.scrollTop = y;
             break;
@@ -385,6 +465,18 @@ WT_DECLARE_WT_MEMBER(
             break;
           case PositionAtCenter:
             contentsContainer.scrollTop = y - (height - rowHeight()) / 2;
+            break;
+        }
+
+        switch (colHint) {
+          case PositionAtLeft:
+            contentsContainer.scrollLeft = x;
+            break;
+          case PositionAtRight:
+            contentsContainer.scrollLeft = x - (width - colWidth);
+            break;
+          case PositionAtCenter:
+            contentsContainer.scrollLeft = x - (width - colWidth) / 2;
             break;
         }
 
@@ -644,6 +736,8 @@ WT_DECLARE_WT_MEMBER(
         return;
       }
 
+      const headerColumnsContainerEl = WT.getElement(headerColumnsContainerId);
+
       if (
         !WT.isIE && !isTouched &&
         (scrollTop !== contentsContainer.scrollTop ||
@@ -663,7 +757,7 @@ WT_DECLARE_WT_MEMBER(
             contentsContainer.scrollLeft =
               scrollLeft;
         }
-        headerColumnsContainer.scrollTop =
+        headerColumnsContainerEl.scrollTop =
           contentsContainer.scrollTop =
             scrollTop;
       }
@@ -673,7 +767,7 @@ WT_DECLARE_WT_MEMBER(
 
       const scrollwidth = contentsContainer.offsetWidth -
         contentsContainer.clientWidth;
-      tw -= headerColumnsContainer.clientWidth;
+      tw -= headerColumnsContainerEl.clientWidth;
 
       if (
         tw > 200 && // XXX: IE's incremental rendering foobars completely
@@ -695,7 +789,7 @@ WT_DECLARE_WT_MEMBER(
       const scrollheight = contentsContainer.offsetHeight -
         contentsContainer.clientHeight;
 
-      const pns = headerColumnsContainer.style;
+      const pns = headerColumnsContainerEl.style;
       if (pns && (pns.marginBottom !== scrollheight + "px")) {
         pns.marginBottom = scrollheight + "px";
         APP.layouts2.adjust(el.childNodes[0].id, [[1, 0]]);

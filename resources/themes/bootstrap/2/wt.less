@@ -68,7 +68,7 @@
  * Custom collapse nav support
  */
 .navbar .nav-collapse {
-  display: block !important; 
+  display: block !important;
 }
 
 @media (max-width: 979px) {
@@ -148,6 +148,13 @@
   .modal-body {
     max-height: none; /* override max-height: 400px in Bootstrap */
   }
+
+  /*
+   * Fix dialog content being cut off see #14332
+   */
+  .Wt-fill-width > .modal-body {
+    width: 100%;
+  }
 }
 
 /*
@@ -188,7 +195,7 @@
   background: url(../splitter-h.png) no-repeat 50% 50% #EEE;
 }
 
-.Wt-hsh2, .Wt-vsh2, 
+.Wt-hsh2, .Wt-vsh2,
 .Wt-vrh2:hover, .Wt-hrh2:hover {
   background-color: @grayLight;
 }
@@ -601,13 +608,13 @@
   /* resize handles */
   .Wt-tv-rh {
     float: right;
-    width: 4px;
+    width: 3px;
     cursor: col-resize;
   }
 
   .Wt-tv-no-rh {
     width: 0px;
-    margin-left: 4px;
+    margin-left: 3px;
     cursor: default;
   }
 
@@ -658,7 +665,7 @@ body.Wt-rtl {
 
     .Wt-tv-no-rh {
       margin-left: 0px;
-      margin-right: 4px;
+      margin-right: 3px;
     }
   }
 }
@@ -674,8 +681,20 @@ body.Wt-rtl {
 
   white-space: nowrap;
 
-  .Wt-header .Wt-tv-c {
-    padding-left: 6px;
+  .Wt-header .Wt-label {
+    padding-inline: 3px 0px;
+  }
+
+  .Wt-header .Wt-tv-no-rh ~ * > * > .Wt-label {
+    padding-inline-end: 3px;
+  }
+
+  .Wt-header div[style*="text-align:center;"] .Wt-tv-sh ~ .Wt-label {
+    padding-inline: 19px 0px;
+  }
+
+  .Wt-header.Wt-tv-no-rh ~ div[style*="text-align:center;"] > * > .Wt-tv-sh ~ .Wt-label {
+    padding-inline-start: 16px;
   }
 
   .Wt-tv-contents {
@@ -727,7 +746,7 @@ body.Wt-rtl {
 
   .Wt-plaintable .Wt-tv-br {
     border-right: 0;
-  }  
+  }
 
   .Wt-tv-contents .Wt-tv-c, .Wt-plaintable td, .Wt-plaintable th {
     border-right: 1px solid @tableBorder;
@@ -1098,7 +1117,7 @@ body.Wt-rtl {
   span:hover {
     color: @white;
     background-color: @linkColor;
-  } 
+  }
 }
 
 /*
@@ -1107,6 +1126,15 @@ body.Wt-rtl {
 .Wt-stack.Wt-animated {
   overflow: hidden;
   position: relative;
+}
+
+/*
+ * WBadge
+ */
+.btn .Wt-badge,
+.nav .Wt-badge,
+.dropdown-menu .Wt-badge {
+ margin-inline-start: 2px;
 }
 
 /*

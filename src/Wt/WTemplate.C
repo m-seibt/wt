@@ -197,8 +197,12 @@ void WTemplate::clear()
   // when WWebWidget calls removeFromParent(), the parent should be null.
   for (WidgetMap::iterator it = widgets_.begin(); it != widgets_.end(); ++it) {
     WWidget *w = it->second.get();
-    if (w)
+    if (w) {
       widgetRemoved(w, false);
+#ifdef WT_TARGET_JAVA
+      manageWidget(w, std::unique_ptr<WWidget>());
+#endif
+    }
   }
 
   widgets_.clear();
@@ -415,7 +419,7 @@ void WTemplate::resolveString(const std::string& varName,
         result << "<span id=\"" << w->id() << "\"> </span>";
       } else {
         applyArguments(w, args);
-        w->htmlText(result);
+        w->htmlText(result, boundWidgetsJs_);
       }
 
       if (newlyRendered_)
@@ -520,8 +524,11 @@ void WTemplate::updateDom(DomElement& element, bool all)
     std::stringstream html;
     renderTemplate(html);
 
+    element.callJavaScript(boundWidgetsJs_.str());
+
     previouslyRendered_ = nullptr;
     newlyRendered_ = nullptr;
+    boundWidgetsJs_.clear();
 
     for (unsigned i = 0; i < newlyRendered.size(); ++i) {
       WWidget *w = newlyRendered[i];

@@ -4,8 +4,8 @@
  * See the LICENSE file for terms of use.
  */
 
+#include "Wt/FromStringDataInfo.h"
 #include "Wt/WBrush.h"
-#include "Wt/WDataInfo.h"
 #include "Wt/WException.h"
 #include "Wt/WFontMetrics.h"
 #include "Wt/WLogger.h"
@@ -446,13 +446,7 @@ void WPdfImage::drawImage(const WRectF& rect, const std::string& imgUrl,
                           int imgWidth, int imgHeight,
                           const WRectF& srect)
 {
-  WDataInfo imgInfo;
-  if (DataUri::isDataUri(imgUrl)) {
-    imgInfo.setDataUri(imgUrl);
-  } else {
-    imgInfo.setFilePath(imgUrl);
-    imgInfo.setUrl(imgUrl);
-  }
+  FromStringDataInfo imgInfo(imgUrl);
   WPdfImage::drawImage(rect, &imgInfo, imgWidth, imgHeight, srect);
 }
 
@@ -645,7 +639,7 @@ void WPdfImage::drawPlainPath(const WPainterPath& path)
 void WPdfImage::drawText(const WRectF& rect,
                          WFlags<AlignmentFlag> flags,
                          WT_MAYBE_UNUSED TextFlag textFlag,
-                         const WString& text,
+                         const WTextF& text,
                          const WPointF *clipPoint)
 {
   // FIXME: textFlag
@@ -657,7 +651,7 @@ void WPdfImage::drawText(const WRectF& rect,
   }
 
   if (trueTypeFont_ && !trueTypeFonts_->busy())
-    trueTypeFonts_->drawText(painter()->font(), rect, flags, text);
+    trueTypeFonts_->drawText(painter()->font(), rect, flags, text.text());
   else {
     HPDF_REAL left, top, right, bottom;
     HPDF_TextAlignment alignment = HPDF_TALIGN_LEFT;
@@ -716,7 +710,7 @@ void WPdfImage::drawText(const WRectF& rect,
 
     HPDF_Page_BeginText(page_);
 
-    std::string s = trueTypeFont_ ? text.toUTF8() : text.narrow();
+    std::string s = trueTypeFont_ ? text.text().toUTF8() : text.text().narrow();
 
     HPDF_Page_TextRect(page_, left, fontSize_, right, 0, s.c_str(),
                        alignment, nullptr);

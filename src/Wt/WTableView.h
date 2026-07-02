@@ -113,6 +113,10 @@ public:
   virtual void scrollTo(const WModelIndex& index,
                         ScrollHint hint = ScrollHint::EnsureVisible) override;
 
+  void scrollTo(const WModelIndex& index,
+                ScrollHint rowHint,
+                ScrollHint columnHint) override;
+
   /*! \brief Scrolls the view x px left and y px top.
    */
   void scrollTo(int x, int y);
@@ -238,12 +242,15 @@ private:
 
   /* Scroll to to process after viewport height is known */
   int scrollToRow_;
-  ScrollHint scrollToHint_;
+  int scrollToCol_;
+  ScrollHint scrollToRowHint_, scrollToColHint_;
   bool columnResizeConnected_;
 
   void updateTableBackground();
 
   ColumnWidget *columnContainer(int renderedColumn) const;
+
+  int columnWidthWithPadding(int column) const;
 
   void modelColumnsInserted(const WModelIndex& parent, int start, int end);
   void modelColumnsAboutToBeRemoved(const WModelIndex& parent,
@@ -336,6 +343,8 @@ private:
   bool ajaxMode() const { return table_ != nullptr; }
   double canvasHeight() const;
   void setRenderedHeight(double th);
+
+  int sumColumnWidthsBefore(int column) const;
 };
 
 }

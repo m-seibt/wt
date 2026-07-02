@@ -121,8 +121,10 @@ private:
   std::vector<int> wsRequestsToHandle_;
   bool cookieUpdateNeeded_;
 
-  void setHeaders(WebResponse& request, const std::string mimeType);
+  void setHeaders(WebResponse& request, const std::string& mimeType);
   void addNoCacheHeaders(WebResponse& response);
+  void addCookie(WebResponse& response, const Http::Cookie& cookie);
+  void addTestCookie(WebResponse& response);
 
   void serveJavaScriptUpdate(WebResponse& response);
   void serveMainscript(WebResponse& response);
@@ -147,6 +149,7 @@ private:
                         WApplication *app);
 
   std::string createFormObjectsList(WApplication *app);
+  void resendFormData(WStringStream& out);
 
   void preLearnStateless(WApplication *app, WStringStream& out);
   WStringStream collectedJS1_, collectedJS2_, invisibleJS_, statelessJS_,
@@ -156,6 +159,7 @@ private:
   void setPageVars(FileServe& page, const std::string& nonce);
   void streamBootContent(WebResponse& response,
                          FileServe& boot, bool hybrid);
+  void streamBootJS(WebResponse& response, bool hybrid, WStringStream& out);
   void addResponseAckPuzzle(WStringStream& out);
   void addContainerWidgets(WWebWidget *w,
                            std::vector<WContainerWidget *>& v);
@@ -181,6 +185,10 @@ private:
    * send them along in the first request.
    */
   void preCollectInvisibleChanges();
+
+#ifndef WT_TARGET_JAVA
+  static Http::Cookie createTestCookie();
+#endif
 
 public:
   virtual std::string learn(WStatelessSlot* slot) final override;

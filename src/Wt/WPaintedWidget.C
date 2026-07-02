@@ -14,6 +14,7 @@
 #include "Wt/WPainter.h"
 #include "Wt/WResource.h"
 #include "Wt/WSvgImage.h"
+#include "Wt/WTextF.h"
 #include "Wt/WVmlImage.h"
 #include "WebUtils.h"
 
@@ -709,6 +710,7 @@ void WWidgetCanvasPainter
       widget_->areaImage_->setTargetJS(widget_->objJsRef());
       updateAreasJs = widget_->areaImage_->updateAreasJS();
     }
+    widget_->formDataChanged();
   }
 
   canvasDevice->render(widget_->jsRef(), 'c' + widget_->id(), el, updateAreasJs);
@@ -754,6 +756,7 @@ void WWidgetCanvasPainter
       widget_->areaImage_->setTargetJS(widget_->objJsRef());
       updateAreasJs = widget_->areaImage_->updateAreasJS();
     }
+    widget_->formDataChanged();
   }
 
   canvasDevice->render(widget_->jsRef(), 'c' + widget_->id(), el, updateAreasJs);
@@ -863,32 +866,42 @@ void WWidgetRasterPainter
 
 WJavaScriptHandle<WTransform> WPaintedWidget::createJSTransform()
 {
+  formDataChanged();
   return jsObjects_.addObject(new WTransform());
 }
 
 WJavaScriptHandle<WBrush> WPaintedWidget::createJSBrush()
 {
+  formDataChanged();
   return jsObjects_.addObject(new WBrush());
 }
 
 WJavaScriptHandle<WPen> WPaintedWidget::createJSPen()
 {
+  formDataChanged();
   return jsObjects_.addObject(new WPen());
 }
 
 WJavaScriptHandle<WPainterPath> WPaintedWidget::createJSPainterPath()
 {
+  formDataChanged();
   return jsObjects_.addObject(new WPainterPath());
 }
 
 WJavaScriptHandle<WRectF> WPaintedWidget::createJSRect()
 {
+  formDataChanged();
   return jsObjects_.addObject(new WRectF(0,0,0,0));
 }
 
 WJavaScriptHandle<WPointF> WPaintedWidget::createJSPoint()
 {
+  formDataChanged();
   return jsObjects_.addObject(new WPointF(0,0));
+}
+WJavaScriptHandle<WTextF> WPaintedWidget::createJSText()
+{
+  return jsObjects_.addObject(new WTextF());
 }
 
 std::string WPaintedWidget::objJsRef() const

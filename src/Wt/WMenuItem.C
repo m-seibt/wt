@@ -169,6 +169,21 @@ void WMenuItem::setIcon(const std::string& path)
   icon_->decorationStyle().setBackgroundImage(WLink(path));
 }
 
+void WMenuItem::setBadge(std::unique_ptr<WBadge> badge)
+{
+  WAnchor *a = anchor();
+  if (!a)
+    return;
+
+  if (badge_) {
+    a->removeWidget(badge_);
+  }
+  badge_ = badge.get();
+  if (badge) {
+    a->addWidget(std::move(badge));
+  }
+}
+
 std::string WMenuItem::icon() const
 {
   if (icon_)
@@ -180,7 +195,7 @@ std::string WMenuItem::icon() const
 void WMenuItem::setText(const WString& text)
 {
   if (!text_) {
-    text_ = anchor()->addWidget(std::make_unique<WLabel>());
+    text_ = anchor()->insertWidget(icon_ ? 1 : 0, std::make_unique<WLabel>());
     text_->setTextFormat(TextFormat::Plain);
   }
 
@@ -388,6 +403,18 @@ void WMenuItem::setHidden(bool hidden,
       menu_->onItemHidden(menu_->indexOf(this), true);
 }
 
+std::unique_ptr<WWidget> WMenuItem::removeWidget(WWidget* widget)
+{
+  if (badge_ && widget == badge_) {
+    WAnchor *a = anchor();
+    if (a) {
+      badge_ = nullptr;
+      return a->removeWidget(widget);
+    }
+  }
+  return WContainerWidget::removeWidget(widget);
+}
+
 void WMenuItem::render(WFlags<RenderFlag> flags)
 {
   if (isThemeStyleEnabled()) {
@@ -530,11 +557,7 @@ void WMenuItem::setParentMenu(WMenu *menu)
   menu_ = menu;
 
   updateInternalPath();
-
-  if (menu && menu->isPopup() &&
-      subMenu_ && subMenu_->isPopup()) {
-    subMenu_->webWidget()->setZIndex(std::max(menu->zIndex() + 1000, subMenu_->zIndex()));
-  }
+  updateMenuZIndex();
 }
 
 WWidget *WMenuItem::contents() const
@@ -651,10 +674,7 @@ void WMenuItem::setMenu(std::unique_ptr<WMenu> menu)
   }
   addWidget(std::move(menu));
 
-  if (subMenu_->isPopup() &&
-      parentMenu() && parentMenu()->isPopup()) {
-    subMenu_->webWidget()->setZIndex(std::max(parentMenu()->zIndex() + 1000, subMenu_->zIndex()));
-  }
+  updateMenuZIndex();
 
   if (popup) {
     setSelectable(false);
@@ -667,6 +687,25 @@ void WMenuItem::setMenu(std::unique_ptr<WMenu> menu)
     // are checkable)
     if (dynamic_cast<WPopupMenu*>(menu_))
       popup->show();
+  }
+}
+
+void WMenuItem::updateMenuZIndex()
+{
+  if (!subMenu_ || !subMenu_->isPopup() ||
+      !menu_ || !menu_->isPopup()) {
+    return;
+  }
+
+  int currentZIndex = subMenu_->zIndex();
+  int newZIndex = std::max(menu_->zIndex() + 1000, currentZIndex);
+
+  if (newZIndex != currentZIndex) {
+    subMenu_->webWidget()->setZIndex(newZIndex);
+
+    for (WMenuItem* submenuItem : subMenu_->items()) {
+      submenuItem->updateMenuZIndex();
+    }
   }
 }
 

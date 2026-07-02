@@ -31,6 +31,7 @@ WT_DECLARE_WT_MEMBER(
     APP.treeViewRegistered.push(self);
 
     let sizeSet = false;
+    let scrollBarColumn = null;
 
     let itemDropsEnabled = false, betweenRowsDropsEnabled = false;
 
@@ -38,6 +39,9 @@ WT_DECLARE_WT_MEMBER(
     const PositionAtTop = 1;
     const PositionAtBottom = 2;
     const PositionAtCenter = 3;
+    const PositionAtLeft = 4;
+    const PositionAtRight = 5;
+    const _NoScroll = 6;
 
     function getItem(event) {
       let columnId = -1, nodeId = null, selected = false, drop = false, ele = null;
@@ -679,20 +683,41 @@ WT_DECLARE_WT_MEMBER(
       }
     };
 
-    this.scrollTo = function(_x, y, rowHeight, hint) {
+    this.scrollTo = function(x, colWidth, y, rowHeight, colHint, rowHint) {
       if (y !== -1) {
         y *= rowHeight;
+        const toScroll = scrollBarColumn ? scrollBarColumn : contentsContainer;
+
         const top = contentsContainer.scrollTop,
-          height = contentsContainer.clientHeight;
-        if (hint === EnsureVisible) {
+          height = contentsContainer.clientHeight,
+          left = toScroll.scrollLeft,
+          width = toScroll.clientWidth;
+
+        if (
+          rowHint === EnsureVisible ||
+          rowHint === PositionAtLeft ||
+          rowHint === PositionAtRight
+        ) {
           if (top + height < y) {
-            hint = PositionAtTop;
+            rowHint = PositionAtBottom;
           } else if (y < top) {
-            hint = PositionAtBottom;
+            rowHint = PositionAtTop;
           }
         }
 
-        switch (hint) {
+        if (
+          colHint === EnsureVisible ||
+          colHint === PositionAtTop ||
+          colHint === PositionAtBottom
+        ) {
+          if (left + width < x + colWidth) {
+            colHint = PositionAtRight;
+          } else if (x < left) {
+            colHint = PositionAtLeft;
+          }
+        }
+
+        switch (rowHint) {
           case PositionAtTop:
             contentsContainer.scrollTop = y;
             break;
@@ -704,10 +729,44 @@ WT_DECLARE_WT_MEMBER(
             break;
         }
 
+        switch (colHint) {
+          case PositionAtLeft:
+            toScroll.scrollLeft = x;
+            break;
+          case PositionAtRight:
+            toScroll.scrollLeft = x - (width - colWidth);
+            break;
+          case PositionAtCenter:
+            toScroll.scrollLeft = x - (width - colWidth) / 2;
+            break;
+        }
+
         window.fakeEvent = { object: contentsContainer };
         contentsContainer.onscroll(window.fakeEvent);
         window.fakeEvent = null;
       }
+    };
+
+    function modifyContentScrollEventInfo(info) {
+      if (scrollBarColumn) {
+        info.scrollX = scrollBarColumn.scrollLeft;
+        info.scrollY = contentsContainer.scrollTop;
+        info.width = contentsContainer.clientWidth;
+        info.height = contentsContainer.clientHeight;
+      }
+    }
+
+    this.setScrollBarColumn = function(sbC) {
+      scrollBarColumn = sbC;
+      if (!scrollBarColumn) {
+        return;
+      }
+
+      if (!scrollBarColumn.wtObj) {
+        scrollBarColumn.wtObj = {};
+      }
+
+      scrollBarColumn.wtObj.modifyScrollEventInfo = modifyContentScrollEventInfo;
     };
 
     /** @type {number} */
@@ -734,6 +793,11 @@ WT_DECLARE_WT_MEMBER(
     } else if (contentsContainer.attachEvent) {
       contentsContainer.attachEvent("onscroll", offsetRowColorImg);
     }
+
+    if (!contentsContainer.wtObj) {
+      contentsContainer.wtObj = {};
+    }
+    contentsContainer.wtObj.modifyScrollEventInfo = modifyContentScrollEventInfo;
 
     self.adjustColumns();
   }

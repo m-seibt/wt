@@ -312,10 +312,19 @@ void WebRenderer::serveResponse(WebResponse& response)
       serveBootstrap(response);
     break;
   case WebResponse::ResponseType::Script:
-    bool hybridPage = session_.progressiveBoot() || session_.env().ajax();
-    if (!hybridPage)
-      setRendered(false);
-    serveMainscript(response);
+    if (session_.type() == EntryPointType::WidgetSet && !session_.env().ajax()) {
+      addTestCookie(response);
+      setHeaders(response, "text/javascript; charset=UTF-8");
+      WStringStream out(response.out());
+      streamBootJS(response, false, out);
+      out.spool(response.out());
+    } else {
+      bool hybridPage = session_.progressiveBoot() || session_.env().ajax();
+      if (!hybridPage) {
+        setRendered(false);
+      }
+      serveMainscript(response);
+    }
     break;
   }
 }
@@ -393,43 +402,52 @@ void WebRenderer::streamBootContent(WebResponse& response,
   boot.streamUntil(out, "BOOT_JS");
 
   if (!(hybrid && session_.app()->hasQuit())) {
-    FileServe bootJs(skeletons::Boot_js);
-
-    bootJs.setVar("SELF_URL",
-                  safeJsStringLiteral
-                  (session_.bootstrapUrl
-                   (response, WebSession::BootstrapOption::ClearInternalPath)));
-    bootJs.setVar("SESSION_ID", session_.sessionId());
-
-    expectedAckId_ = scriptId_ = WRandom::get();
-    ackErrs_ = 0;
-
-    bootJs.setVar("SCRIPT_ID", scriptId_);
-    bootJs.setVar("RANDOMSEED", WRandom::get());
-    bootJs.setVar("RELOAD_IS_NEWSESSION", conf.reloadIsNewSession());
-    bootJs.setVar("USE_COOKIES",
-                  conf.sessionTracking() == Configuration::CookiesURL);
-    bootJs.setVar("AJAX_CANONICAL_URL",
-                  safeJsStringLiteral(session_.ajaxCanonicalUrl(response)));
-    bootJs.setVar("APP_CLASS", "Wt");
-    bootJs.setVar("PATH_INFO", safeJsStringLiteral
-                  (session_.pagePathInfo_));
-    bootJs.setVar("DELAY_LOAD_AT_BOOT", conf.delayLoadAtBoot());
-
-    bootJs.setCondition("COOKIE_CHECKS", conf.cookieChecks());
-    bootJs.setCondition("HYBRID", hybrid);
-    bootJs.setCondition("PROGRESS", hybrid && !session_.env().ajax());
-    bootJs.setCondition("DEFER_SCRIPT", true);
-    bootJs.setCondition("WEBGL_DETECT", conf.webglDetect());
-
-    std::string internalPath
-      = hybrid ? session_.app()->internalPath() : session_.env().internalPath();
-    bootJs.setVar("INTERNAL_PATH", safeJsStringLiteral(internalPath));
-
-    bootJs.stream(out);
+    streamBootJS(response, hybrid, out);
   }
 
   out.spool(response.out());
+}
+
+void WebRenderer::streamBootJS(WebResponse& response, bool hybrid, WStringStream& out)
+{
+  Configuration& conf = session_.controller()->configuration();
+  FileServe bootJs(skeletons::Boot_js);
+
+  bootJs.setVar("SELF_URL",
+                safeJsStringLiteral
+                (session_.bootstrapUrl
+                  (response, WebSession::BootstrapOption::ClearInternalPath)));
+  bootJs.setVar("SESSION_ID", session_.sessionId());
+
+  expectedAckId_ = scriptId_ = WRandom::get();
+  ackErrs_ = 0;
+
+  bootJs.setVar("SCRIPT_ID", scriptId_);
+  bootJs.setVar("RANDOMSEED", WRandom::get());
+  bootJs.setVar("RELOAD_IS_NEWSESSION", conf.reloadIsNewSession());
+  bootJs.setVar("USE_COOKIES",
+                conf.sessionTracking() == Configuration::CookiesURL);
+  bootJs.setVar("AJAX_CANONICAL_URL",
+                safeJsStringLiteral(session_.ajaxCanonicalUrl(response)));
+  bootJs.setVar("APP_CLASS", "Wt");
+  bootJs.setVar("PATH_INFO", safeJsStringLiteral
+                (session_.pagePathInfo_));
+  bootJs.setVar("DELAY_LOAD_AT_BOOT", conf.delayLoadAtBoot());
+
+  bool testCookieSupport = conf.cookieChecks() &&
+                           session_.type() != EntryPointType::WidgetSet;
+
+  bootJs.setCondition("COOKIE_CHECKS", testCookieSupport);
+  bootJs.setCondition("HYBRID", hybrid);
+  bootJs.setCondition("PROGRESS", hybrid && !session_.env().ajax());
+  bootJs.setCondition("DEFER_SCRIPT", true);
+  bootJs.setCondition("WEBGL_DETECT", conf.webglDetect());
+
+  std::string internalPath
+    = hybrid ? session_.app()->internalPath() : session_.env().internalPath();
+  bootJs.setVar("INTERNAL_PATH", safeJsStringLiteral(internalPath));
+
+  bootJs.stream(out);
 }
 
 void WebRenderer::serveLinkedCss(WebResponse& response)
@@ -571,14 +589,37 @@ void WebRenderer::addNoCacheHeaders(WebResponse& response)
   response.addHeader("Expires", "0");
 }
 
-void WebRenderer::setHeaders(WebResponse& response, const std::string mimeType)
+void WebRenderer::addCookie(WebResponse& response, const Http::Cookie& cookie)
+{
+#ifndef WT_TARGET_JAVA
+  response.addHeader("Set-Cookie", renderCookieHttpHeader(cookie, session_));
+#else
+  response.addCookie(cookie);
+#endif
+}
+
+void WebRenderer::addTestCookie(WebResponse& response)
+{
+#ifndef WT_TARGET_JAVA
+  addCookie(response, createTestCookie());
+#else
+  WStringStream cookie;
+  cookie << "WtTestCookie=ok;"
+         << " Version=1;"
+         << " Max-Age=60;"
+         << " Path=/;"
+         << "httponly;"
+         << "secure;"
+         << "SameSite=None";
+
+  response.addHeader("Set-Cookie", cookie.str());
+#endif
+}
+
+void WebRenderer::setHeaders(WebResponse& response, const std::string& mimeType)
 {
   for (const auto& cookie : cookiesToSet_) {
-#ifndef WT_TARGET_JAVA
-    response.addHeader("Set-Cookie", renderCookieHttpHeader(cookie, session_));
-#else
-    response.addCookie(cookie);
-#endif
+    addCookie(response, cookie);
   }
   cookiesToSet_.clear();
 
@@ -623,6 +664,10 @@ void WebRenderer::serveJavaScriptUpdate(WebResponse& response)
                   << WWebWidget::jsStringLiteral(sessionUrl())
                   << ");";
   }
+
+/*  collectedJS1_ << session_.app()->javaScriptClass()
+                << "._p_.resendAllFormData();";*/
+
 
   WStringStream out(response.out());
 
@@ -970,6 +1015,8 @@ void WebRenderer::serveMainscript(WebResponse& response)
     ("CATCH_ALL_ERROR", conf.clientSideErrorReportingLevel() == Configuration::All &&
                         conf.errorReporting() != Configuration::NoErrors);
   script.setCondition
+    ("FORM_DATA_CACHED", conf.cacheFormData());
+  script.setCondition
     ("SHOW_ERROR", conf.errorReporting() == Configuration::ErrorMessage);
   script.setCondition
     ("UGLY_INTERNAL_PATHS", session_.useUglyInternalPaths());
@@ -1254,6 +1301,10 @@ void WebRenderer::serveMainAjax(WStringStream& out)
   out << app->javaScriptClass()
       << "._p_.setFormObjects([" << currentFormObjectsList_ << "]);\n";
   formObjectsChanged_ = false;
+
+  if (conf.cacheFormData()) {
+    resendFormData(out);
+  }
 
   setRendered(true);
   setJSSynced(true);
@@ -1747,6 +1798,7 @@ void WebRenderer::collectChanges(std::vector<DomElement *>& changes)
 void WebRenderer::collectJavaScriptUpdate(WStringStream& out)
 {
   WApplication *app = session_.app();
+  Configuration& conf = session_.controller()->configuration();
 
   try {
     if (session_.sessionIdChanged_) {
@@ -1798,6 +1850,10 @@ void WebRenderer::collectJavaScriptUpdate(WStringStream& out)
         out << app->javaScriptClass()
             << "._p_.setFormObjects([" << currentFormObjectsList_ << "]);";
       }
+    }
+
+    if (conf.cacheFormData()) {
+      resendFormData(out);
     }
 
     app->streamAfterLoadJavaScript(out);
@@ -1853,8 +1909,43 @@ std::string WebRenderer::createFormObjectsList(WApplication *app)
   }
 
   formObjectsChanged_ = false;
+  session_.pruneFormDataCache();
 
   return result;
+}
+
+void WebRenderer::resendFormData(WStringStream& out)
+{
+  const Configuration& conf = session_.controller()->configuration();
+  std::string resendFormDataList;
+  double resendNbr = 0.0;
+  const double maxResend = static_cast<double>(currentFormObjects_.size()) * conf.maxFormDataResendRatio();
+
+  for (FormObjectsMap::const_iterator i = currentFormObjects_.begin();
+       i != currentFormObjects_.end(); ++i) {
+    if (i->second->resendFormData() || !session_.inFormDataCache(i->first)) {
+      if (!resendFormDataList.empty()) {
+        resendFormDataList += ',';
+      }
+
+      resendNbr++;
+
+      if (resendNbr >= maxResend) {
+        LOG_DEBUG("Max form-object to resend reached, resending all form-objects instead.");
+        out << session_.app()->javaScriptClass()
+            << "._p_.resendAllFormData();";
+
+        return;
+      }
+
+      resendFormDataList += "'" + i->first + "'";
+    }
+  }
+
+  if (!resendFormDataList.empty()) {
+    out << session_.app()->javaScriptClass()
+        << "._p_.setResendFormData([" << resendFormDataList << "]);";
+  }
 }
 
 void WebRenderer::collectJS(WStringStream* js)
@@ -2144,9 +2235,10 @@ std::string WebRenderer::headDeclarations() const
       }
     }
 
-  if (!session_.favicon().empty()) {
+  const std::string faviconUrl = session_.favicon()->url();
+  if (!faviconUrl.empty()) {
     result <<
-      "<link rel=\"shortcut icon\" href=\"" << session_.favicon() << '"';
+      "<link rel=\"shortcut icon\" href=\"" << faviconUrl << '"';
     closeSpecial(result);
   }
 
@@ -2174,5 +2266,17 @@ void WebRenderer::preCollectInvisibleChanges()
     visibleOnly_ = true;
   }
 }
+
+#ifndef WT_TARGET_JAVA
+Http::Cookie WebRenderer::createTestCookie()
+{
+  Http::Cookie testCookie("WtTestCookie", "ok");
+  testCookie.setPath("/");
+  testCookie.setSameSite(Http::Cookie::SameSite::None);
+  testCookie.setSecure(true);
+  testCookie.setMaxAge(std::chrono::seconds(60));
+  return testCookie;
+}
+#endif
 
 }

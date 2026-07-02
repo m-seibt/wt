@@ -66,6 +66,7 @@ FILE_TO_STRING(xml/auth_css_theme.xml
 SET(libsources
 Wt/FlexLayoutImpl.h Wt/FlexLayoutImpl.C
 Wt/FlexItemImpl.h Wt/FlexItemImpl.C
+Wt/FromStringDataInfo.h Wt/FromStringDataInfo.C
 Wt/PopupWindow.h Wt/PopupWindow.C
 Wt/Resizable.h Wt/Resizable.C
 Wt/ResizeSensor.h Wt/ResizeSensor.C
@@ -94,6 +95,7 @@ Wt/WAny.h Wt/WAny.C
 Wt/WApplication.h Wt/WApplication.C
 Wt/WAudio.h Wt/WAudio.C
 Wt/WBatchEditProxyModel.h Wt/WBatchEditProxyModel.C
+Wt/WBadge.h Wt/WBadge.C
 Wt/WBootstrapTheme.h Wt/WBootstrapTheme.C
 Wt/WBootstrap2Theme.h Wt/WBootstrap2Theme.C
 Wt/WBootstrap3Theme.h Wt/WBootstrap3Theme.C
@@ -133,6 +135,8 @@ Wt/WEmailValidator.h Wt/WEmailValidator.C
 Wt/WEnvironment.h Wt/WEnvironment.C
 Wt/WEvent.h Wt/WEvent.C
 Wt/WException.h Wt/WException.C
+Wt/WFavicon.h Wt/WFavicon.C
+Wt/WFaviconPair.h Wt/WFaviconPair.C
 Wt/WFileDropWidget.h Wt/WFileDropWidget.C
 Wt/WFileResource.h Wt/WFileResource.C
 Wt/WFileUpload.h Wt/WFileUpload.C
@@ -195,6 +199,7 @@ Wt/WMessageResourceBundle.h Wt/WMessageResourceBundle.C
 Wt/WMessageResources.h Wt/WMessageResources.C
 Wt/WModelIndex.h Wt/WModelIndex.C
 Wt/WNavigationBar.h Wt/WNavigationBar.C
+Wt/WNotification.h Wt/WNotification.C
 Wt/WObject.h Wt/WObject.C
 Wt/WOverlayLoadingIndicator.h Wt/WOverlayLoadingIndicator.C
 Wt/WPaintDevice.h Wt/WPaintDevice.C
@@ -220,6 +225,7 @@ Wt/WRectArea.h Wt/WRectArea.C
 Wt/WRectF.h Wt/WRectF.C
 Wt/WRegExpValidator.h Wt/WRegExpValidator.C
 Wt/WResource.h Wt/WResource.C
+Wt/WResourceFavicon.h Wt/WResourceFavicon.C
 Wt/WSelectionBox.h Wt/WSelectionBox.C
 Wt/WSelfDeletingResource.h Wt/WSelfDeletingResource.C
 Wt/WServer.h Wt/WServer.C
@@ -256,6 +262,7 @@ Wt/WTableView.h Wt/WTableView.C
 Wt/WText.h Wt/WText.C
 Wt/WTextArea.h Wt/WTextArea.C
 Wt/WTextEdit.h Wt/WTextEdit.C
+Wt/WTextF.h Wt/WTextF.C
 Wt/WTheme.h Wt/WTheme.C
 Wt/WTime.h Wt/WTime.C
 Wt/WTimeEdit.h Wt/WTimeEdit.C
@@ -270,6 +277,7 @@ Wt/WTreeNode.h Wt/WTreeNode.C
 Wt/WTreeTable.h Wt/WTreeTable.C
 Wt/WTreeTableNode.h Wt/WTreeTableNode.C
 Wt/WTreeView.h Wt/WTreeView.C
+Wt/WUrlFavicon.h Wt/WUrlFavicon.C
 Wt/WValidator.h Wt/WValidator.C
 Wt/WVBoxLayout.h Wt/WVBoxLayout.C
 Wt/WVector3.h Wt/WVector3.C
@@ -497,9 +505,9 @@ IF(HAVE_HARU)
 ENDIF(HAVE_HARU)
 
 IF("${WT_WRASTERIMAGE_IMPLEMENTATION}" STREQUAL "GraphicsMagick")
-  SET(libsources ${libsources} Wt/WRasterImage.h Wt/WRasterImage-gm.C)
+  SET(libsources ${libsources} Wt/WRasterImage.h Wt/WRasterImage-gm.C Wt/WRasterFavicon.h Wt/WRasterFavicon.C)
 ELSEIF("${WT_WRASTERIMAGE_IMPLEMENTATION}" STREQUAL "Direct2D")
-  SET(libsources ${libsources} Wt/WRasterImage.h Wt/WRasterImage-d2d1.C)
+  SET(libsources ${libsources} Wt/WRasterImage.h Wt/WRasterImage-d2d1.C Wt/WRasterFavicon.h Wt/WRasterFavicon.C)
 ENDIF("${WT_WRASTERIMAGE_IMPLEMENTATION}" STREQUAL "GraphicsMagick")
 
 if(WT_USE_OPENGL)

@@ -44,13 +44,14 @@ private:
   bool parseBody(WebRequest& request, const std::string boundary);
   bool parseHead(WebRequest& request);
   ::int64_t maxFormData_, maxRequestSize_, left_;
-  std::ostream *spoolStream_;
+  std::unique_ptr<std::ostream> spoolStream_;
   WebRequest *request_;
 
   std::string currentKey_;
 
   void readUntilBoundary(WebRequest& request, const std::string boundary,
                          int tossAtBoundary,
+                         int maxLength,
                          std::string *resultString,
                          std::ostream *resultFile);
   void windBuffer(int offset);

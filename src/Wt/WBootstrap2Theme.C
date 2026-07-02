@@ -317,8 +317,14 @@ void WBootstrap2Theme::apply(WWidget *widget,
       else {
         WDatePicker *picker
           = dynamic_cast<WDatePicker *>(widget);
-        if (picker)
+        if (picker) {
           element.addPropertyWord(Property::Class, "Wt-datepicker");
+        } else {
+          WBadge *badge = dynamic_cast<WBadge *>(widget);
+          if (badge) {
+            element.addPropertyWords(Property::Class, "Wt-badge badge");
+          }
+        }
       }
 
       break;
@@ -344,7 +350,7 @@ std::string WBootstrap2Theme::utilityCssClass(int utilityCssClassRole) const
   case ToolTipInner:
     return "tooltip-inner";
   case ToolTipOuter:
-    return "tooltip fade top in";
+    return "Wt-tooltip tooltip fade top in";
   default:
     return "";
   }

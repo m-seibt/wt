@@ -16,6 +16,7 @@
 #include "Wt/WResource.h"
 #include "Wt/WServer.h"
 #include "Wt/WTimerWidget.h"
+#include "Wt/WUrlFavicon.h"
 #ifndef WT_TARGET_JAVA
 #include "Wt/WWebSocketResource.h"
 #endif // WT_TARGET_JAVA
@@ -104,7 +105,7 @@ WebSession::WebSession(WebController *controller,
                        const WebRequest *request,
                        WEnvironment *env)
   : type_(type),
-    favicon_(favicon),
+    defaultFavicon_(std::make_unique<WUrlFavicon>(favicon)),
     state_(State::JustCreated),
     sessionId_(sessionId),
     sessionIdChanged_(false),
@@ -312,6 +313,11 @@ void WebSession::destruct()
   flushBootStyleResponse();
 }
 #endif // WT_TARGET_JAVA
+
+WFavicon* WebSession::favicon() const
+{
+  return app_ ? app_->favicon() : defaultFavicon();
+}
 
 std::string WebSession::docType() const
 {
@@ -1583,16 +1589,19 @@ void WebSession::handleRequest(Handler& handler)
             kill();
           } else {
             handler.response()->setResponseType(WebResponse::ResponseType::Script);
+            const std::string* wtt = request.getParameter("wtt");
+            if (wtt && *wtt == "widgetset") {
+              env_->enableAjax(request);
+              if (!start(handler.response())) {
+                throw WException("Could not start application.");
+              }
 
-            init(request); // env, url/internalpath, initial query parameters
-            env_->enableAjax(request);
-
-            if (!start(handler.response()))
-              throw WException("Could not start application.");
-
-            app_->notify(WEvent(WEvent::Impl(&handler)));
-
-            setExpectLoad();
+              app_->notify(WEvent(WEvent::Impl(&handler)));
+              setExpectLoad();
+            } else {
+              init(request); // env, url/internalpath, initial query parameters
+              serveResponse(handler);
+            }
           }
 
           break;
@@ -2786,15 +2795,20 @@ EventType WebSession::getEventType(const WEvent& event) const
             *signalE == "keepAlive")
           return EventType::Other;
         else {
-          std::vector<unsigned int> signalOrder
+          std::vector<SignalProcessAction> signalActions
             = getSignalProcessingOrder(event);
 
           unsigned timerSignals = 0;
 
-          for (unsigned i = 0; i < signalOrder.size(); ++i) {
-            int signalI = signalOrder[i];
-            std::string se = signalI > 0
-              ? 'e' + std::to_string(signalI) : std::string();
+          for (unsigned i = 0; i < signalActions.size(); ++i) {
+            SignalProcessAction signalI = signalActions[i];
+
+            if (!signalI.handleSignal) {
+              continue; // signal has already been trough this loop
+            }
+
+            std::string se = signalI.number > 0
+              ? 'e' + std::to_string(signalI.number) : std::string();
             const std::string *s = getSignal(request, se);
 
             if (!s)
@@ -2946,7 +2960,7 @@ void WebSession::serveResponse(Handler& handler)
   handler.flushResponse();
 }
 
-void WebSession::propagateFormValues(const WEvent& e, const std::string& se)
+void WebSession::propagateFormValues(const WEvent& e, const std::string& se, const SignalProcessAction& spa)
 {
   const WebRequest& request = *e.impl_.handler->request();
 
@@ -2970,7 +2984,7 @@ void WebSession::propagateFormValues(const WEvent& e, const std::string& se)
 
     app_->setFocus(*focus, selectionStart, selectionEnd);
   } else
-    app_->setFocus(std::string(), -1, -1);
+    app_->setFocus(nullptr, -1, -1);
 
   for (WebRenderer::FormObjectsMap::const_iterator i = formObjects.begin();
        i != formObjects.end(); ++i) {
@@ -2979,25 +2993,94 @@ void WebSession::propagateFormValues(const WEvent& e, const std::string& se)
 
     if (!request.postDataExceeded()) {
       WWidget *w = dynamic_cast<WWidget*>(obj);
+      WObject::FormData data = getFormData(request, formName, spa);
       // FIXME: reenable isVisible() check once we've fixed all of the regressions
-      if (w && (!w->isEnabled()/* || !w->isVisible()*/))
-        continue; // Do not update form data of a disabled or invisible widget
-      obj->setFormData(getFormData(request, se + formName));
+      if (!spa.handleSignal ||
+          (w && (!w->isEnabled()/* || !w->isVisible()*/))) {
+        /* Do not update form data of a disabled or invisible widget or
+         * if it was already handled.
+         */
+        continue;
+      }
+      obj->setFormData(data);
     } else
       obj->setRequestTooLarge(request.postDataExceeded());
   }
 }
 
+const Http::ParameterValues& WebSession::getFormParamValues(const WebRequest& request,
+                                                            const std::string& name,
+                                                            const SignalProcessAction& spa)
+{
+  Configuration& conf = controller_->configuration();
+
+  int signalNumber = spa.number;
+  const Http::ParameterValues* requestParam;
+
+  /* If the signals are not processed in the order they are received,
+   * we also need to check if the form data was not changed in a
+   * previous signal that has not been processed yet. Since the cache
+   * is not yet updated.
+   */
+  do {
+    std::string se = signalNumber > 0 ? 'e' + std::to_string(signalNumber) : std::string();
+    requestParam = &(request.getParameterValues(se + name));
+    signalNumber--;
+  } while (conf.cacheFormData() &&
+           !spa.updateCache &&
+           Utils::isEmpty(*requestParam) &&
+           signalNumber >= 0);
+
+  if (!Utils::isEmpty(*requestParam)) {
+    if ((*requestParam)[0] == "Wt-null") {
+      requestParam = &WebRequest::emptyValues_;
+    }
+
+    if (conf.cacheFormData() && spa.updateCache) {
+      formDataCache_[name] = *requestParam;
+    }
+
+    return *requestParam;
+  } else if (conf.cacheFormData()) {
+    auto it = formDataCache_.find(name);
+    if (it != formDataCache_.end()) {
+      return it->second;
+    }
+  }
+  return *requestParam;
+}
+
 WObject::FormData WebSession::getFormData(const WebRequest& request,
-                                          const std::string& name)
+                                          const std::string& name,
+                                          const SignalProcessAction& spa)
 {
   std::vector<Http::UploadedFile> files;
   Utils::find(request.uploadedFiles(), name, files);
 
-  return WObject::FormData(request.getParameterValues(name), files);
+  const Http::ParameterValues& paramValues = getFormParamValues(request, name, spa);
+
+  return WObject::FormData(paramValues, files);
 }
 
-std::vector<unsigned int>
+bool WebSession::inFormDataCache(const std::string& name) const
+{
+  return formDataCache_.find(name) != formDataCache_.end();
+}
+
+void WebSession::pruneFormDataCache()
+{
+  for (auto it = formDataCache_.begin(); it != formDataCache_.end();)
+  {
+    if (renderer_.currentFormObjects_.find(it->first) == renderer_.currentFormObjects_.end())
+    {
+      Utils::eraseAndNext(formDataCache_, it);
+    } else {
+      ++it;
+    }
+  }
+}
+
+std::vector<WebSession::SignalProcessAction>
 WebSession::getSignalProcessingOrder(const WEvent& e) const
 {
   // Rush 'onChange' events. Reason: if a user edits a text area and
@@ -3006,9 +3089,10 @@ WebSession::getSignalProcessingOrder(const WEvent& e) const
   // is processed before the changed event, causing the changed event
   // to fail because the event target was deleted.
   WebSession::Handler& handler = *e.impl_.handler;
+  Configuration& conf = controller_->configuration();
 
-  std::vector<unsigned int> highPriority;
-  std::vector<unsigned int> normalPriority;
+  std::vector<SignalProcessAction> highPriority;
+  std::vector<SignalProcessAction> normalPriority;
 
   for (unsigned i = 0;; ++i) {
     const WebRequest& request = *handler.request();
@@ -3028,12 +3112,18 @@ WebSession::getSignalProcessingOrder(const WEvent& e) const
         // Signal was not exposed, do nothing
       } else if (signal->name() == WFormWidget::CHANGE_SIGNAL) {
         // compare by pointer in the condition above is ok
-        highPriority.push_back(i);
+        if (highPriority.size() != i && conf.cacheFormData()) {
+          // We need to process the signal but update the cache later.
+          highPriority.push_back(SignalProcessAction(i, false, true));
+          normalPriority.push_back(SignalProcessAction(i, true, false));
+        } else {
+          highPriority.push_back(SignalProcessAction(i, true, true));
+        }
       } else {
-        normalPriority.push_back(i);
+        normalPriority.push_back(SignalProcessAction(i, true, true));
       }
     } else {
-      normalPriority.push_back(i);
+      normalPriority.push_back(SignalProcessAction(i, true, true));
     }
   }
 
@@ -3048,19 +3138,19 @@ void WebSession::notifySignal(const WEvent& e)
 
   // Reorder signals, as browsers sometimes generate them in a strange order
   if (handler.nextSignal == -1) {
-    handler.signalOrder = getSignalProcessingOrder(e);
+    handler.signalActions = getSignalProcessingOrder(e);
     handler.nextSignal = 0;
   }
 
-  for (unsigned i = handler.nextSignal; i < handler.signalOrder.size(); ++i) {
+  for (unsigned i = handler.nextSignal; i < handler.signalActions.size(); ++i) {
     if (!handler.request())
       return;
 
     const WebRequest& request = *handler.request();
 
-    int signalI = handler.signalOrder[i];
-    std::string se = signalI > 0
-      ? 'e' + std::to_string(signalI) : std::string();
+    SignalProcessAction signalI = handler.signalActions[i];
+    std::string se = signalI.number > 0
+      ? 'e' + std::to_string(signalI.number) : std::string();
     const std::string *signalE = getSignal(request, se);
 
     if (!signalE)
@@ -3085,7 +3175,7 @@ void WebSession::notifySignal(const WEvent& e)
     } else if (*signalE == "keepAlive") {
       // Do nothing
     } else if (*signalE != "poll") {
-      propagateFormValues(e, se);
+      propagateFormValues(e, se, signalI);
 
       // Save pending changes (e.g. from resource completion)
       // This is needed because we will discard changes from learned

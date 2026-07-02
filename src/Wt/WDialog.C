@@ -401,17 +401,6 @@ void WDialog::render(WFlags<RenderFlag> flags)
     bool centerX = offset(Side::Left).isAuto() && offset(Side::Right).isAuto(),
       centerY = offset(Side::Top).isAuto() && offset(Side::Bottom).isAuto();
 
-    /*
-     * Make sure layout adjusts to contents preferred width, especially
-     * important for IE workaround which uses static position scheme
-     */
-    if (app->environment().ajax())
-      if (width().isAuto())
-        if (maximumWidth().unit() == LengthUnit::Percentage ||
-            maximumWidth().toPixels() == 0)
-          impl_->resolveWidget("layout")->setMaximumSize(999999,
-                                                         maximumHeight());
-
     doJavaScript("new " WT_CLASS ".WDialog("
                  + app->javaScriptClass() + "," + jsRef()
                  + "," + titleBar_->jsRef()
@@ -654,9 +643,9 @@ void WDialog::setHidden(bool hidden, const WAnimation& animation)
 
     DialogCover *c = cover();
     if (!hidden) {
-      if (!WWebWidget::canOptimizeUpdates() || isRendered()) {
+      if ((!WWebWidget::canOptimizeUpdates() || isRendered()) && offset(Side::Left).isAuto()) {
         doJavaScript("var o = " + jsRef() + ";"
-                   "if (o && o.wtObj) o.wtObj.centerDialog();");
+                     "if (o && o.wtObj) o.wtObj.centerDialog();");
       }
       if (c)
         c->pushDialog(this, animation);
@@ -698,6 +687,9 @@ void WDialog::positionAt(const Wt::WMouseEvent& ev)
   if (wApp->environment().javaScript()) {
         setOffsets(ev.window().x, Side::Left);
         setOffsets(ev.window().y, Side::Top);
+  }
+  if (isHidden()) {
+    show();
   }
 }
 

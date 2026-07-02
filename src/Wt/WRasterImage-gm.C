@@ -4,9 +4,9 @@
  * See the LICENSE file for terms of use.
  */
 
+#include "Wt/FromStringDataInfo.h"
 #include "Wt/WApplication.h"
 #include "Wt/WBrush.h"
-#include "Wt/WDataInfo.h"
 #include "Wt/WException.h"
 #include "Wt/WFontMetrics.h"
 #include "Wt/WLogger.h"
@@ -671,13 +671,7 @@ void WRasterImage::drawImage(const WRectF& rect, const std::string& imgUri,
                              const WRectF& srect)
 {
 
-  WDataInfo dataInfo;
-  if (DataUri::isDataUri(imgUri)) {
-    dataInfo.setDataUri(imgUri);
-  } else {
-    dataInfo.setFilePath(imgUri);
-    dataInfo.setUrl(imgUri);
-  }
+  FromStringDataInfo dataInfo(imgUri);
   doDrawImage(rect, &dataInfo, imgWidth, imgHeight, srect, true);
 }
 
@@ -713,7 +707,7 @@ void WRasterImage::doDrawImage(const WRectF& rect, const WAbstractDataInfo* data
       throw WException("Unsupported image mimetype: " + uri.mimeType);
     }
 
-    cImage = ReadInlineImage(&info, imgUri.substr(imgUri.find(',') + 1).c_str(), &exception);
+    cImage = ReadInlineImage(&info, imgUri.substr(imgUri.find(';') + 1).c_str(), &exception);
   } else {
     std::string filePath = dataInfo->hasFilePath() ? dataInfo->filePath() : "";
     strncpy(info.filename, filePath.c_str(), 2048);
@@ -970,7 +964,7 @@ void WRasterImage::Impl::drawPlainPath(const WPainterPath& path)
 void WRasterImage::drawText(const WRectF& rect,
                             WFlags<AlignmentFlag> flags,
                             TextFlag textFlag,
-                            const WString& text,
+                            const WTextF& text,
                             const WPointF *clipPoint)
 {
   if (textFlag == TextFlag::WordWrap)
@@ -1054,7 +1048,7 @@ void WRasterImage::drawText(const WRectF& rect,
 
     DrawSetGravity(impl_->context_, gravity);
 
-    std::string utf8 = text.toUTF8();
+    std::string utf8 = text.text().toUTF8();
     Utils::replace(utf8, '%', "%%");
 
     DrawAnnotation(impl_->context_, p.x(), p.y(), (const unsigned char *)utf8.c_str());
@@ -1119,7 +1113,7 @@ void WRasterImage::drawText(const WRectF& rect,
 
     FontSupport::Bitmap bitmap(w, h);
     impl_->fontSupport_->drawText(painter_->font(), renderRect,
-                                  t, bitmap, flags, text);
+                                  t, bitmap, flags, text.text());
 
     PixelPacket *pixels = GetImagePixels(impl_->image_, 0, 0,
                                          impl_->w_, impl_->h_);

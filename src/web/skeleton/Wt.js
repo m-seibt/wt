@@ -24,6 +24,7 @@
   _$_$if_CATCH_ALL_ERROR_$_
   _$_$if_DYNAMIC_JS_$_
   _$_$ifnot_DYNAMIC_JS_$_
+  _$_$if_FORM_DATA_CACHED_$_
   _$_$if_SHOW_ERROR_$_
   _$_$if_STRICTLY_SERIALIZED_EVENTS_$_
   _$_$if_UGLY_INTERNAL_PATHS_$_
@@ -1771,6 +1772,39 @@ if (!window._$_WT_CLASS_$_) {
     };
 
     /*
+     * Computes the intersection rectangle beteween the element and the
+     * window.
+     *
+     * Returns null if the element is not visible in the window.
+     */
+    this.getVisibleRectangle = function(el) {
+      const topLeft = WT.widgetPageCoordinates(el);
+      const height = el.clientHeight;
+      const width = el.clientWidth;
+
+      const windowSize = WT.windowSize();
+
+      // left
+      const x = Math.max(0, topLeft.x);
+      // top
+      const y = Math.max(0, topLeft.y);
+
+      // right
+      const r = Math.min(topLeft.x + width, windowSize.x);
+      // bottom
+      const b = Math.min(topLeft.y + height, windowSize.y);
+
+      const w = r - x;
+      const h = b - y;
+
+      if (w <= 0 || h <= 0) {
+        return null;
+      }
+
+      return { x: x, y: y, width: w, height: h };
+    };
+
+    /*
      * position right to (x) or left from (rightx) and
      * bottom of (y) or top from (bottomy)
      */
@@ -1785,9 +1819,24 @@ if (!window._$_WT_CLASS_$_) {
         reserveHeight = e.offsetHeight,
         hside,
         vside;
-      const windowSize = WT.windowSize(),
+
+      let windowSize = WT.windowSize(),
         windowX = document.body.scrollLeft + document.documentElement.scrollLeft,
         windowY = document.body.scrollTop + document.documentElement.scrollTop;
+
+      const parent = e.parentNode;
+      if (
+        parent &&
+        !WT.hasTag(parent, "BODY") &&
+        !parent.classList.contains("Wt-domRoot")
+      ) {
+        const visibleRect = WT.getVisibleRectangle(parent);
+        if (visibleRect) {
+          windowSize = { x: visibleRect.width, y: visibleRect.height };
+          windowX = visibleRect.x;
+          windowY = visibleRect.y;
+        }
+      }
 
       /*
        * Should really distinguish between static versus dynamic: for a
@@ -2317,6 +2366,7 @@ window._$_APP_CLASS_$_ = new (function() {
 
     if (
       newLocation !== null &&
+      typeof newLocation !== UNDEFINED &&
       newLocation.length > 0 &&
       !newLocation.startsWith("/")
     ) {
@@ -2638,6 +2688,21 @@ window._$_APP_CLASS_$_ = new (function() {
   }
 
   let formObjects = [];
+  let resendFormData = [];
+  let mustResendAllFormData = false;
+
+  function mustResendFormData(id) {
+    if (mustResendAllFormData) {
+      return true;
+    }
+
+    for (let i = 0; i < resendFormData.length; ++i) {
+      if (resendFormData[i] === id) {
+        return true;
+      }
+    }
+    return false;
+  }
 
   function encodeEvent(event) {
     const e = event.event;
@@ -2659,16 +2724,33 @@ window._$_APP_CLASS_$_ = new (function() {
         continue;
       }
 
+      let alreadyPushed = false;
       if (el.wtEncodeValue) {
         v = el.wtEncodeValue(el);
       } else if (el.type === "select-multiple") {
+        const selected = [];
         for (let j = 0, jl = el.options.length; j < jl; j++) {
           if (el.options[j].selected) {
-            result.push(
-              formObjects[x] + "=" +
-                encodeURIComponent(el.options[j].value)
-            );
+            selected.push(el.options[j].value);
           }
+        }
+        if (selected.length !== 0) {
+          _$_$if_FORM_DATA_CACHED_$_();
+          const encodeVal = selected.join();
+          if (encodeVal !== el.WtLastEncodedValue || mustResendFormData(formObjects[x])) {
+            el.WtLastEncodedValue = encodeVal;
+            _$_$endif_$_();
+
+            for (let j = 0; j < selected.length; j++) {
+              result.push(
+                formObjects[x] + "=" +
+                  encodeURIComponent(selected[j])
+              );
+            }
+            _$_$if_FORM_DATA_CACHED_$_();
+          }
+          _$_$endif_$_();
+          alreadyPushed = true;
         }
       } else if (el.type === "checkbox" || el.type === "radio") {
         if (el.indeterminate || el.style.opacity === "0.5") {
@@ -2693,21 +2775,39 @@ window._$_APP_CLASS_$_ = new (function() {
         }
       }
 
+      if (v === null && !alreadyPushed) {
+        v = "Wt-null";
+      }
+
       if (v !== null) {
-        let component;
-        try {
-          component = encodeURIComponent(v);
-          result.push(formObjects[x] + "=" + component);
-        } catch (e) {
-          // encoding failed, omit this form field
-          // This can happen on Windows when typing a character
-          // with a high and low surrogate pair (like an emoji).
-          // On Chrome and Firefox this is split out into two pairs
-          // of keydown/keyup events instead of one.
-          console.error("Form object " + formObjects[x] + " failed to encode, discarded", e);
+        _$_$if_FORM_DATA_CACHED_$_();
+        if (v !== el.WtLastEncodedValue || mustResendFormData(formObjects[x])) {
+          _$_$endif_$_();
+
+          let component;
+          try {
+            component = encodeURIComponent(v);
+            result.push(formObjects[x] + "=" + component);
+
+            _$_$if_FORM_DATA_CACHED_$_();
+            el.WtLastEncodedValue = v;
+            _$_$endif_$_();
+          } catch (e) {
+            // encoding failed, omit this form field
+            // This can happen on Windows when typing a character
+            // with a high and low surrogate pair (like an emoji).
+            // On Chrome and Firefox this is split out into two pairs
+            // of keydown/keyup events instead of one.
+            console.error("Form object " + formObjects[x] + " failed to encode, discarded", e);
+          }
+
+          _$_$if_FORM_DATA_CACHED_$_();
         }
+        _$_$endif_$_();
       }
     }
+    resendFormData = [];
+    mustResendAllFormData = false;
 
     try {
       if (document.activeElement) {
@@ -2774,11 +2874,22 @@ window._$_APP_CLASS_$_ = new (function() {
       const objY = widgetCoords.y;
 
       if (typeof event.object.scrollLeft !== UNDEFINED) {
+        const scrollInfo = {
+          scrollX: Math.round(event.object.scrollLeft),
+          scrollY: Math.round(event.object.scrollTop),
+          width: Math.round(event.object.clientWidth),
+          height: Math.round(event.object.clientHeight),
+        };
+
+        if (event.object.wtObj && event.object.wtObj.modifyScrollEventInfo) {
+          event.object.wtObj.modifyScrollEventInfo(scrollInfo);
+        }
+
         result.push(
-          "scrollX=" + Math.round(event.object.scrollLeft),
-          "scrollY=" + Math.round(event.object.scrollTop),
-          "width=" + Math.round(event.object.clientWidth),
-          "height=" + Math.round(event.object.clientHeight)
+          "scrollX=" + scrollInfo.scrollX,
+          "scrollY=" + scrollInfo.scrollY,
+          "width=" + scrollInfo.width,
+          "height=" + scrollInfo.height
         );
       }
 
@@ -3990,13 +4101,13 @@ window._$_APP_CLASS_$_ = new (function() {
     return "0";
   }
 
-  window.onunload = function() {
+  window.addEventListener("pagehide", () => {
     if (!hasQuit) {
       self.emit(self, "Wt-unload");
       scheduleUpdate();
       sendUpdate();
     }
-  };
+  });
 
   function setLocale(m) {
     if (m === "") {
@@ -4021,18 +4132,23 @@ window._$_APP_CLASS_$_ = new (function() {
     }
   }
 
-  let firstCall = true;
   let globalEventsFunctions = null;
+  let currentGlobalDomId = null;
   const keyEvents = ["keydown", "keyup", "keypress"];
 
   function updateGlobal(id) {
-    firstCall = false;
+    if (typeof id === UNDEFINED) {
+      id = currentGlobalDomId;
+    }
+
     let domId;
     if (id === null) {
       domId = document.querySelector(".Wt-domRoot").id;
     } else {
       domId = id;
     }
+
+    currentGlobalDomId = domId;
 
     for (let i = 0; i < keyEvents.length; ++i) {
       const elemEvents = globalEventsFunctions ? globalEventsFunctions[domId] : null;
@@ -4076,11 +4192,11 @@ window._$_APP_CLASS_$_ = new (function() {
     }
   }
 
+  let updateGlobalScheduled = false;
+
   function bindGlobal(event, id, f) {
-    let init = false;
     if (!globalEventsFunctions) {
       globalEventsFunctions = {};
-      init = true;
     }
 
     // Saves the event functions
@@ -4089,11 +4205,12 @@ window._$_APP_CLASS_$_ = new (function() {
     }
 
     globalEventsFunctions[id][event] = f;
-    if (init) {
+
+    if (!updateGlobalScheduled) {
+      updateGlobalScheduled = true;
       setTimeout(function() {
-        if (firstCall) {
-          updateGlobal(null);
-        }
+        updateGlobal();
+        updateGlobalScheduled = false;
       }, 0);
     }
   }
@@ -4155,6 +4272,12 @@ window._$_APP_CLASS_$_ = new (function() {
     setSessionUrl,
     setFormObjects: function(o) {
       formObjects = o;
+    },
+    setResendFormData: function(o) {
+      resendFormData = o;
+    },
+    resendAllFormData: function() {
+      mustResendAllFormData = true;
     },
     saveDownPos,
     addTimerEvent,

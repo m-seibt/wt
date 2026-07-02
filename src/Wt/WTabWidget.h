@@ -12,6 +12,7 @@
 
 namespace Wt {
 
+  class WBadge;
   class WMenu;
   class WMenuItem;
   class WStackedWidget;
@@ -192,6 +193,18 @@ public:
    * \sa setTabToolTip()
    */
   WString tabToolTip(int index) const;
+
+  /*! \brief Sets the badge for the tab at the specified index.
+   *
+   * To remove the badge again, call this function with \p nullptr.
+   */
+  void setTabBadge(int index, std::unique_ptr<WBadge> badge);
+
+  /*! \brief Returns the badge for the tab at the specified index.
+   *
+   * \sa setTabBadge()
+   */
+  WBadge *tabBadge(int index) const;
 
   /*! \brief Enables internal paths for items.
    *

@@ -299,4 +299,25 @@ int WRun(const std::string &applicationName,
   }
 }
 
+void WServer::setAccessLoggerFormat(const std::string& format)
+{ }
+
+std::string WServer::accessLoggerFormat() const
+{
+  return std::string();
+}
+
+Wt::WLogger* WServer::accessLogger()
+{
+  return nullptr;
+}
+
+void WServer::setRedirectAccessLog(bool redirect)
+{ }
+
+bool WServer::redirectAccessLog() const
+{
+  return true;
+}
+
 }

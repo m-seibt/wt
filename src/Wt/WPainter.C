@@ -13,8 +13,8 @@
 #include "Wt/Render/WTextRenderer.h"
 #endif
 
+#include "Wt/FromStringDataInfo.h"
 #include "Wt/WApplication.h"
-#include "Wt/WDataInfo.h"
 #include "Wt/WException.h"
 #include "Wt/WLineF.h"
 #include "Wt/WPainter.h"
@@ -151,19 +151,10 @@ WPainter::Image::Image(const std::string& url, int width, int height)
   : width_(width),
     height_(height),
     useOld_(true),
-    info_(nullptr)
-{
-  std::shared_ptr<WDataInfo> info = std::make_shared<WDataInfo>();
-  if (DataUri::isDataUri(url)) {
-    info->setDataUri(url);
-  } else {
-    info->setUrl(url);
-  }
+    info_(std::make_shared<FromStringDataInfo>(url))
+{ }
 
-  info_ = info;
-}
-
-WPainter::Image::Image(std::shared_ptr<WAbstractDataInfo> info, int width, int height)
+WPainter::Image::Image(std::shared_ptr<const WAbstractDataInfo> info, int width, int height)
   : width_(width),
     height_(height),
     useOld_(false),
@@ -172,21 +163,12 @@ WPainter::Image::Image(std::shared_ptr<WAbstractDataInfo> info, int width, int h
 
 WPainter::Image::Image(const std::string& url, const std::string& fileName)
   : useOld_(true),
-    info_(nullptr)
+    info_(std::make_shared<FromStringDataInfo>(url, fileName))
 {
-  std::shared_ptr<WDataInfo> info = std::make_shared<WDataInfo>();
-  info->setFilePath(fileName);
-  if (DataUri::isDataUri(url)) {
-    info->setDataUri(url);
-  } else {
-    info->setUrl(url);
-  }
-
-  info_ = info;
   evaluateSize();
 }
 
-WPainter::Image::Image(std::shared_ptr<WAbstractDataInfo> info)
+WPainter::Image::Image(std::shared_ptr<const WAbstractDataInfo> info)
   : useOld_(false),
     info_(info)
 {
@@ -610,7 +592,7 @@ void WPainter::drawRects(const std::vector<WRectF>& rectangles)
 }
 
 void WPainter::drawText(const WRectF& rectangle, WFlags<AlignmentFlag> flags,
-                        const WString& text)
+                        const WTextF& text)
 {
   if (!(flags & AlignVerticalMask))
     flags |= AlignmentFlag::Top;
@@ -624,7 +606,7 @@ void WPainter::drawText(const WRectF& rectangle, WFlags<AlignmentFlag> flags,
 void WPainter::drawText(const WRectF& rectangle,
                         WFlags<AlignmentFlag> alignmentFlags,
                         TextFlag textFlag,
-                        const WString& text,
+                        const WTextF& text,
                         const WPointF *clipPoint)
 {
   if (textFlag == TextFlag::SingleLine) {
@@ -683,7 +665,7 @@ void WPainter::drawText(const WRectF& rectangle,
       s << ";" << font().cssText(false);
 
       s << "\">"
-         << WWebWidget::escapeText(text, true).toUTF8()
+         << WWebWidget::escapeText(text.text(), true).toUTF8()
          << "</td></tr></table>";
 
       save();
@@ -709,24 +691,34 @@ void WPainter::drawText(const WRectF& rectangle,
 void WPainter::drawText(double x, double y, double width, double height,
                         WFlags<AlignmentFlag> alignmentFlags,
                         TextFlag textFlag,
-                        const WString& text)
+                        const WTextF& text)
 {
   drawText(WRectF(x, y, width, height), alignmentFlags, textFlag, text);
 }
 
 void WPainter::drawText(double x, double y, double width, double height,
-                        WFlags<AlignmentFlag> flags, const WString& text)
+                        WFlags<AlignmentFlag> flags, const WTextF& text)
 {
   drawText(WRectF(x, y, width, height), flags, text);
 }
 
+#ifndef WT_TARGET_JAVA
 void WPainter::drawTextOnPath(const WRectF &rect,
                               WFlags<AlignmentFlag> alignmentFlags,
-                              const std::vector<WString> &text,
+                              const std::vector<WTextF> &text,
                               const WTransform &transform,
                               const WPainterPath &path,
                               double angle, double lineHeight,
                               bool softClipping)
+#else
+void WPainter::drawWTextFOnPath(const WRectF &rect,
+                              WFlags<AlignmentFlag> alignmentFlags,
+                              const std::vector<WTextF> &text,
+                              const WTransform &transform,
+                              const WPainterPath &path,
+                              double angle, double lineHeight,
+                              bool softClipping)
+#endif
 {
   if (!(alignmentFlags & AlignVerticalMask))
     alignmentFlags |= AlignmentFlag::Top;
@@ -742,7 +734,7 @@ void WPainter::drawTextOnPath(const WRectF &rect,
         break;
       const WPainterPath::Segment &seg = path.segments()[i];
       const WPainterPath::Segment &tseg = tpath.segments()[i];
-      std::vector<WString> splitText = splitLabel(text[i]);
+      std::vector<WString> splitText = splitLabel(text[i].text());
       if (seg.type() == MoveTo ||
           seg.type() == LineTo ||
           seg.type() == QuadEnd ||
@@ -761,6 +753,27 @@ void WPainter::drawTextOnPath(const WRectF &rect,
       }
     }
   }
+}
+
+void WPainter::drawTextOnPath(const WRectF &rect,
+                              WFlags<AlignmentFlag> alignmentFlags,
+                              const std::vector<WString> &text,
+                              const WTransform &transform,
+                              const WPainterPath &path,
+                              double angle, double lineHeight,
+                              bool softClipping)
+{
+  std::vector<WTextF> textF;
+  for (int i = 0; i < text.size(); ++i) {
+#ifndef WT_TARGET_JAVA
+    textF.push_back(text[i]);
+  }
+  drawTextOnPath(rect, alignmentFlags, textF, transform, path, angle, lineHeight, softClipping);
+#else
+    textF.push_back(WTextF(text[i]));
+  }
+  drawWTextFOnPath(rect, alignmentFlags, textF, transform, path, angle, lineHeight, softClipping);
+#endif
 }
 
 void WPainter::fillPath(const WPainterPath& path, const WBrush& b)

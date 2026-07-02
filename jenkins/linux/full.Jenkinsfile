@@ -25,6 +25,7 @@ def wt_configure(Map args) {
             -DCMAKE_CXX_COMPILER_LAUNCHER=ccache \
             -DBUILD_EXAMPLES=ON \
             -DBUILD_TESTS=ON \
+            -DENABLE_SELENIUM_TESTS=ON \
             -DCONNECTOR_FCGI=ON \
             -DCONNECTOR_HTTP=ON \
             -DDEBUG=ON \
@@ -85,7 +86,12 @@ pipeline {
                 dir('test') {
                     warnError('mt wthttp test.wt failed') {
                         sh "../build-mt-http/test/test.wt --log_format=JUNIT --log_level=all --log_sink=${env.WORKSPACE}/mt_wthttp_test_log.xml"
-
+                    }
+                    warnError('mt Selenium (Chrome) tests failed') {
+                        sh "../build-mt-http/test/selenium/test.selenium --log_format=JUNIT --log_level=all --log_sink=${env.WORKSPACE}/mt_selenium_chrome_test_log.xml -- --browser-type 'chrome'"
+                    }
+                    warnError('mt Selenium (Firefox) tests failed') {
+                        sh "../build-mt-http/test/selenium/test.selenium --log_format=JUNIT --log_level=all --log_sink=${env.WORKSPACE}/mt_selenium_firefox_test_log.xml -- --browser-type 'firefox' --browser-driver '\$(which geckodriver)'"
                     }
                 }
             }
@@ -100,7 +106,6 @@ pipeline {
                 dir('test') {
                     warnError('st wthttp test.wt failed') {
                         sh "../build-st-http/test/test.wt --log_format=JUNIT --log_level=all --log_sink=${env.WORKSPACE}/st_wthttp_test_log.xml"
-
                     }
                 }
             }
@@ -115,7 +120,6 @@ pipeline {
                 dir('test') {
                     warnError('mt wtfcgi test.wt failed') {
                         sh "../build-mt-fcgi/test/test.wt --log_format=JUNIT --log_level=all --log_sink=${env.WORKSPACE}/mt_wtfcgi_test_log.xml"
-
                     }
                 }
             }
@@ -130,7 +134,6 @@ pipeline {
                 dir('test') {
                     warnError('st wtfcgi test.wt failed') {
                         sh "../build-st-fcgi/test/test.wt --log_format=JUNIT --log_level=all --log_sink=${env.WORKSPACE}/st_wtfcgi_test_log.xml"
-
                     }
                 }
             }

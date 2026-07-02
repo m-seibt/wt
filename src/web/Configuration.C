@@ -267,6 +267,8 @@ void Configuration::reset()
   valgrindPath_ = "";
   errorReporting_ = ErrorMessage;
   clientSideErrorReportLevel_ = Framework;
+  cacheFormData_ = false;
+  maxFormDataResendRatio_ = 0.5;
   if (!runDirectory_.empty()) // disabled by connector
     runDirectory_ = RUNDIR;
   sessionIdLength_ = 16;
@@ -439,6 +441,18 @@ Configuration::ClientSideErrorReportLevel Configuration::clientSideErrorReportin
 {
   READ_LOCK;
   return clientSideErrorReportLevel_;
+}
+
+bool Configuration::cacheFormData() const
+{
+  READ_LOCK;
+  return cacheFormData_;
+}
+
+float Configuration::maxFormDataResendRatio() const
+{
+  READ_LOCK;
+  return maxFormDataResendRatio_;
 }
 
 bool Configuration::debug() const
@@ -958,6 +972,14 @@ void Configuration::readApplicationSettings(xml_node<> *app)
     else
       throw WServer::Exception("<debug-level>: expecting 'framework' or 'all'");
   }
+
+  setBoolean(app, "cache-form-data", cacheFormData_);
+
+  std::string maxFormDataRatio
+    = singleChildElementValue(app, "form-data-resend-ratio-limit", "");
+
+  if (!maxFormDataRatio.empty())
+    maxFormDataResendRatio_ = Utils::stof(maxFormDataRatio);
 
   setInt(app, "num-threads", numThreads_);
 

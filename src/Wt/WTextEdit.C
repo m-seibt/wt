@@ -8,6 +8,7 @@
 #include "Wt/WApplication.h"
 #include "Wt/WEnvironment.h"
 #include "Wt/WException.h"
+#include "Wt/WStringStream.h"
 #include "Wt/WTextEdit.h"
 #include "Wt/WLogger.h"
 
@@ -22,6 +23,10 @@
 #include "js/WTextEdit.min.js"
 #endif
 
+#ifdef WT_TARGET_JAVA
+#include "boost/lexical_cast.hpp"
+#endif // WT_TARGET_JAVA
+
 namespace Wt {
 
 LOGGER("WTextEdit");
@@ -31,6 +36,7 @@ typedef std::map<std::string, cpp17::any> SettingsMapType;
 WTextEdit::WTextEdit()
   : onChange_(this, "change"),
     onRender_(this, "render"),
+    badVersion_(this, "badVersion"),
     initialised_(false)
 {
   init();
@@ -40,6 +46,7 @@ WTextEdit::WTextEdit(const WT_USTRING& text)
   : WTextArea(text),
     onChange_(this, "change"),
     onRender_(this, "render"),
+    badVersion_(this, "badVersion"),
     initialised_(false)
 {
   init();
@@ -55,14 +62,13 @@ void WTextEdit::init()
 
   version_ = getTinyMCEVersion();
 
-#ifndef WT_TARGET_JAVA
-  if (!verifyTinyMCEVersion(version_)){
-    LOG_WARN("Version of TinyMCE does not seem to match the version given in the config.");
-  }
-#endif
+  WStringStream js;
+  js << "new " WT_CLASS ".WTextEdit("
+     << app->javaScriptClass() << ","
+     << jsRef() << ","
+     << version_ << ");";
 
-  setJavaScriptMember(" WTextEdit", "new " WT_CLASS ".WTextEdit("
-                      + app->javaScriptClass() + "," + jsRef() + ");");
+  setJavaScriptMember(" WTextEdit", js.str());
 
   setJavaScriptMember
     (WT_RESIZE_JS,
@@ -100,6 +106,7 @@ void WTextEdit::init()
   }
 
   onChange_.connect(this, &WTextEdit::propagateOnChange);
+  badVersion_.connect(this, &WTextEdit::onBadVersion);
 }
 
 WTextEdit::~WTextEdit()
@@ -166,38 +173,33 @@ std::string WTextEdit::renderRemoveJs(bool recursive)
 
 int WTextEdit::getTinyMCEVersion()
 {
-  std::string version = "6";
+  int res = 6;
+  std::string version = std::to_string(res);
   WApplication::readConfigurationProperty("tinyMCEVersion", version);
-  return Utils::stoi(version);
-}
+
+  try {
+    res = Utils::stoi(version);
 
 #ifndef WT_TARGET_JAVA
-bool WTextEdit::verifyTinyMCEVersion(int version)
-{
-  std::string path = getTinyMCEPath();
-  std::ifstream s(path.c_str(), std::ios::in | std::ios::binary);
-  if (!s) {
-    return false;
+  } catch (const std::invalid_argument& e) {
+#else
+  } catch (const boost::bad_lexical_cast& e) {
+#endif // WT_TARGET_JAVA
+
+    LOG_WARN("Invalid tinyMCEVersion configuration property: " << version
+            << ", defaulting to version " << res);
   }
 
-  std::regex correctLineRegex("^( \\* .*[Vv]ersion:?|\\/\\/) \\d*\\.\\d*\\.\\d* ");
-  std::regex versionRegex("\\d*\\.\\d*\\.\\d*");
-
-  std::string line;
-  while (std::getline(s, line)) {
-    if (std::regex_search(line, correctLineRegex)) {
-      std::smatch match;
-      std::regex_search(line, match, versionRegex);
-
-      std::string strVesion = match.str();
-      std::regex_search(strVesion, match, std::regex("\\d*"));
-      int expectedVersion = Utils::stoi(match.str());
-      return expectedVersion == version;
-    }
-  }
-  return version == 3;
+  return res;
 }
-#endif //WT_TARGET_JAVA
+
+void WTextEdit::onBadVersion(int version)
+{
+  LOG_WARN("The version of TinyMCE loaded (version "
+          << version <<
+          ") does not seem to match the version given in the config (version "
+          << version_ << ").");
+}
 
 std::string WTextEdit::getTinyMCEPath()
 {

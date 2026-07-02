@@ -32,6 +32,7 @@
 
 #include "Wt/WApplication.h"
 #include "Wt/WEnvironment.h"
+#include "Wt/WFavicon.h"
 #include "Wt/WLogger.h"
 
 #ifdef WT_THREADED
@@ -58,6 +59,20 @@ class WT_API WebSession
   : public std::enable_shared_from_this<WebSession>
 #endif
 {
+private:
+  struct SignalProcessAction
+  {
+    SignalProcessAction(unsigned int number, bool updateCache, bool handleSignal)
+      : number(number),
+        updateCache(updateCache),
+        handleSignal(handleSignal)
+    { }
+
+    unsigned int number;
+    bool updateCache;
+    bool handleSignal;
+  };
+
 public:
   enum class State {
     JustCreated,
@@ -81,7 +96,8 @@ public:
   bool attachThreadToLockedHandler();
 
   EntryPointType type() const { return type_; }
-  std::string favicon() const { return favicon_; }
+  WFavicon* favicon() const;
+  WFavicon* defaultFavicon() const { return defaultFavicon_.get(); }
   std::string docType() const;
 
   std::string sessionId() const { return sessionId_; }
@@ -214,7 +230,7 @@ public:
     void setRequest(WebRequest *request, WebResponse *response);
 
     int nextSignal;
-    std::vector<unsigned int> signalOrder;
+    std::vector<SignalProcessAction> signalActions;
 
 #ifdef WT_THREADED
     std::thread::id lockOwner() const { return lockOwner_; }
@@ -300,7 +316,7 @@ private:
   std::deque<std::shared_ptr<ApplicationEvent> > eventQueue_;
 
   EntryPointType type_;
-  std::string favicon_;
+  std::unique_ptr<WFavicon> defaultFavicon_;
   State state_;
 
   std::string sessionId_, sessionIdCookie_, multiSessionId_;
@@ -347,6 +363,8 @@ private:
   WApplication *app_;
   bool debug_;
 
+  std::map<std::string, Http::ParameterValues> formDataCache_;
+
   std::vector<Handler *> handlers_;
 
   Handler *recursiveEventHandler_;
@@ -359,8 +377,17 @@ private:
                                 const std::string& signalName,
                                 bool checkExposed) const;
 
-  static WObject::FormData getFormData(const WebRequest& request,
-                                       const std::string& name);
+  const Http::ParameterValues& getFormParamValues(const WebRequest& request,
+                                                  const std::string& name,
+                                                  const SignalProcessAction& spa);
+
+  WObject::FormData getFormData(const WebRequest& request,
+                                const std::string& name,
+                                const SignalProcessAction& spa);
+
+  bool inFormDataCache(const std::string& name) const;
+
+  void pruneFormDataCache();
 
   void render(Handler& handler);
   void serveError(int status, Handler& handler, const std::string& exception);
@@ -372,9 +399,9 @@ private:
   void processSignal(EventSignalBase *s, const std::string& se,
                      const WebRequest& request, SignalKind kind);
 
-  std::vector<unsigned int> getSignalProcessingOrder(const WEvent& e) const;
+  std::vector<SignalProcessAction> getSignalProcessingOrder(const WEvent& e) const;
   void notifySignal(const WEvent& e);
-  void propagateFormValues(const WEvent& e, const std::string& se);
+  void propagateFormValues(const WEvent& e, const std::string& se, const SignalProcessAction& spa);
 
   const std::string *getSignal(const WebRequest& request,
                                const std::string& se) const;

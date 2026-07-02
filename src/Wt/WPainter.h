@@ -15,6 +15,7 @@
 #include <Wt/WPainterPath.h>
 #include <Wt/WPen.h>
 #include <Wt/WShadow.h>
+#include <Wt/WTextF.h>
 #include <Wt/WTransform.h>
 
 namespace Wt {
@@ -300,7 +301,7 @@ public:
      *
      * \note The information required depends on the WPaintDevice used.
      */
-    Image(std::shared_ptr<WAbstractDataInfo> info, int width, int height);
+    Image(std::shared_ptr<const WAbstractDataInfo> info, int width, int height);
 
     /*! \brief Creates an image.
      *
@@ -319,7 +320,7 @@ public:
      *
      * \note The information required depends on the WPaintDevice used.
      */
-    Image(std::shared_ptr<WAbstractDataInfo> info);
+    Image(std::shared_ptr<const WAbstractDataInfo> info);
 
     /*! \brief Returns the url.
      */
@@ -339,7 +340,7 @@ public:
   private:
     int width_, height_;
     bool useOld_;
-    std::shared_ptr<WAbstractDataInfo> info_;
+    std::shared_ptr<const WAbstractDataInfo> info_;
 
     void evaluateSize();
 
@@ -626,12 +627,24 @@ public:
   void drawText(const WRectF& rect,
                 WFlags<AlignmentFlag> alignmentFlags,
                 TextFlag textFlag,
-                const WString& text,
+                const WTextF& text,
                 const WPointF *clipPoint = nullptr);
 
+#ifndef WT_TARGET_JAVA
   void drawTextOnPath(const WRectF& rect,
                       WFlags<AlignmentFlag> alignmentFlags,
-                      const std::vector<WString> &text,
+                      const std::vector<WTextF> &text,
+                      const WTransform &transform,
+                      const WPainterPath &path,
+                      // lineHeight could be calculated inside of this
+                      // method, but let's leave it like this for now,
+                      // with this method undocumented.
+                      double angle, double lineHeight,
+                      bool softClipping);
+#else
+  void drawWTextFOnPath(const WRectF& rect,
+                      WFlags<AlignmentFlag> alignmentFlags,
+                      const std::vector<WTextF> &text,
                       const WTransform &transform,
                       const WPainterPath &path,
                       // lineHeight could be calculated inside of this
@@ -640,24 +653,34 @@ public:
                       double angle, double lineHeight,
                       bool softClipping);
 
+WT_DEPRECATED("WString has been replaced by WTextF in WPainter and WPaintDevice. Use drawWTextFOnPath instead.")
+#endif
+  void drawTextOnPath(const WRectF& rect,
+                      WFlags<AlignmentFlag> alignmentFlags,
+                      const std::vector<WString> &text,
+                      const WTransform &transform,
+                      const WPainterPath &path,
+                      double angle, double lineHeight,
+                      bool softClipping);
+
   /*! \brief Draws text.
    *
    * This is an overloaded method for convenience, it will render text on a
    * single line.
    *
-   * \sa drawText(const WRectF&, WFlags<AlignmentFlag>, TextFlag textFlag, const WString&)
+   * \sa drawText(const WRectF&, WFlags<AlignmentFlag>, TextFlag textFlag, const WTextF&)
    */
   void drawText(const WRectF& rectangle, WFlags<AlignmentFlag> flags,
-                const WString& text);
+                const WTextF& text);
 
   /*! \brief Draws text.
    *
    * This is an overloaded method for convenience.
    *
-   * \sa drawText(const WRectF&, WFlags<AlignmentFlag>, const WString&)
+   * \sa drawText(const WRectF&, WFlags<AlignmentFlag>, const WTextF&)
    */
   void drawText(double x, double y, double width, double height,
-                WFlags<AlignmentFlag> flags, const WString& text);
+                WFlags<AlignmentFlag> flags, const WTextF& text);
 
   /*! \brief Draws text.
    *
@@ -666,12 +689,43 @@ public:
    * \sa drawText(const WRectF& rect,
    *              WFlags<AlignmentFlag> alignmentFlags,
    *              TextFlag textFlag,
-   *              const WString& text)
+   *              const WTextF& text)
    */
   void drawText(double x, double y, double width, double height,
                 WFlags<AlignmentFlag> alignmentFlags,
                 TextFlag textFlag,
-                const WString& text);
+                const WTextF& text);
+
+#ifdef WT_TARGET_JAVA
+  /*! \brief Draws text.
+   */
+  WT_DEPRECATED("WString has been replaced by WTextF in WPainter and WPaintDevice.")
+  void drawText(const WRectF& rect,
+                WFlags<AlignmentFlag> alignmentFlags,
+                TextFlag textFlag,
+                const WString& text,
+                const WPointF *clipPoint = nullptr) { drawText(rect, alignmentFlags, textFlag, WTextF(text), clipPoint); }
+
+  /*! \brief Draws text.
+   */
+  WT_DEPRECATED("WString has been replaced by WTextF in WPainter and WPaintDevice.")
+  void drawText(const WRectF& rectangle, WFlags<AlignmentFlag> flags,
+                const WString& text) { drawText(rectangle, flags, WTextF(text)); }
+
+  /*! \brief Draws text.
+   */
+  WT_DEPRECATED("WString has been replaced by WTextF in WPainter and WPaintDevice.")
+  void drawText(double x, double y, double width, double height,
+                WFlags<AlignmentFlag> flags, const WString& text) { drawText(x, y, width, height, flags, WTextF(text)); }
+
+  /*! \brief Draws text.
+   */
+  WT_DEPRECATED("WString has been replaced by WTextF in WPainter and WPaintDevice.")
+  void drawText(double x, double y, double width, double height,
+                WFlags<AlignmentFlag> alignmentFlags,
+                TextFlag textFlag,
+                const WString& text) { drawText(x, y, width, height, alignmentFlags, textFlag, WTextF(text)); }
+#endif
 
   /*! \brief Fills a (complex) path.
    *
