@@ -358,21 +358,24 @@ void WServer::setSslPasswordCallback(const SslPasswordCallback& cb)
     impl_->serverConfiguration_->setSslPasswordCallback(sslPasswordCallback_);
 }
 
-int WRun(int argc, char *argv[], ApplicationCreator createApplication)
+int WRun(int argc, char *argv[], ApplicationCreator createApplication, const WLogSink* customLogger)
 {
   std::string applicationPath = argv[0];
   std::vector<std::string> args(argv + 1, argv + argc);
 
-  return WRun(applicationPath, args, createApplication);
+  return WRun(applicationPath, args, createApplication, customLogger);
 }
 
 int WRun(const std::string &applicationPath,
          const std::vector<std::string> &args,
-         ApplicationCreator createApplication)
+         ApplicationCreator createApplication,
+         const WLogSink* customLogger)
 {
   try {
     WServer server(applicationPath, "");
     try {
+      if (customLogger)
+        server.setCustomLogger(*customLogger);
       server.setServerConfiguration(applicationPath, args, WTHTTP_CONFIGURATION);
       server.addEntryPoint(EntryPointType::Application, createApplication);
       if (server.start()) {

@@ -249,12 +249,14 @@ void WServer::setSslPasswordCallback(const SslPasswordCallback& cb)
   LOG_INFO_S(this, "setSslPasswordCallback(): has no effect in isapi connector");
 }
 
-int WRun(int argc, char *argv[], ApplicationCreator createApplication)
+int WRun(int argc, char *argv[], ApplicationCreator createApplication, const WLogSink* customLogger)
 {
   try {
     WServer server(argv[0], "");
 
     try {
+      if (customLogger)
+        server.setCustomLogger(*customLogger);
       server.setServerConfiguration(argc, argv);
       server.addEntryPoint(EntryPointType::Application, createApplication);
       server.start();
@@ -275,12 +277,15 @@ int WRun(int argc, char *argv[], ApplicationCreator createApplication)
 
 int WRun(const std::string &applicationName,
          const std::vector<std::string> &args,
-         ApplicationCreator createApplication)
+         ApplicationCreator createApplication,
+         const WLogSink* customLogger)
 {
   try {
     WServer server(applicationName, "");
 
     try {
+      if (customLogger)
+        server.setCustomLogger(*customLogger);
       server.setServerConfiguration(applicationName, args);
       server.addEntryPoint(EntryPointType::Application, createApplication);
       server.start();

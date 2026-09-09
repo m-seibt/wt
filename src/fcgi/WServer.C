@@ -284,22 +284,24 @@ void WServer::setSslPasswordCallback(WT_MAYBE_UNUSED const std::function<std::st
     "setSslPasswordCallback(): has no effect in fcgi connector");
 }
 
-int WRun(int argc, char *argv[], ApplicationCreator createApplication)
+int WRun(int argc, char *argv[], ApplicationCreator createApplication, const WLogSink* customLogger)
 {
   std::string applicationPath = argv[0];
   std::vector<std::string> args(argv + 1, argv + argc);
 
-  return WRun(applicationPath, args, createApplication);
+  return WRun(applicationPath, args, createApplication, customLogger);
 }
 
 int WRun(const std::string &applicationName,
          const std::vector<std::string> &args,
-         ApplicationCreator createApplication)
+         ApplicationCreator createApplication,
+         const WLogSink* customLogger)
 {
   try {
     WServer server(applicationName, "");
-
     try {
+      if (customLogger)
+        server.setCustomLogger(*customLogger);
       server.setServerConfiguration(applicationName, args);
       server.addEntryPoint(EntryPointType::Application, createApplication);
       server.start();

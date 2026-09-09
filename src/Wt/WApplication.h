@@ -2715,14 +2715,16 @@ private:
  * the server.
  *
  * \relates WServer
- * \sa WApplication
+ * \sa WApplication, WServer::setCustomLogger
  */
 extern int WRun(int argc, char** argv,
-                ApplicationCreator createApplication = 0);
+                ApplicationCreator createApplication = 0,
+                const WLogSink* customLogger = nullptr);
 #else // DOXYGEN_ONLY
 extern int WTCONNECTOR_API
 WRun(int argc, char** argv,
-     ApplicationCreator createApplication = ApplicationCreator());
+     ApplicationCreator createApplication = ApplicationCreator(),
+     const WLogSink* customLogger = nullptr);
 
 #endif // DOXYGEN_ONLY
 
@@ -2758,16 +2760,18 @@ WRun(int argc, char** argv,
  * the command line.
  *
  * \relates WServer
- * \sa WApplication
+ * \sa WApplication, WServer::setCustomLogger
  */
 extern int WRun(const std::string &applicationPath,
                 const std::vector<std::string> &args,
-                ApplicationCreator createApplication = 0);
+                ApplicationCreator createApplication = 0,
+                const WLogSink* customLogger = nullptr);
 #else // DOXYGEN_ONLY
 extern int WTCONNECTOR_API
 WRun(const std::string &applicationPath,
      const std::vector<std::string> &args,
-     ApplicationCreator createApplication = ApplicationCreator());
+     ApplicationCreator createApplication = ApplicationCreator(),
+     const WLogSink* customLogger = nullptr);
 
 #endif // DOXYGEN_ONLY
 #endif // WT_TARGET_JAVA
